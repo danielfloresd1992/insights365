@@ -1,0 +1,57 @@
+/*  LO QUE ENRIQUECE LA PORTADA DE '/' (coverLiveWeek/heroExtras, propuesta «El turno»)
+
+    El reloj de la píldora entra al cambiar, la marca más nueva de la regla del turno late y la flecha de abajo invita a
+    bajar. Con movimiento reducido, todo quieto.
+*/
+
+.hx-tick {
+  animation: hx-tick 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes hx-tick {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+.hx-tick {
+  display: inline-block;
+}
+
+.hx-mark {
+  animation: hx-pop 0.45s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+/* scale suelto, no transform: la marca se centra con translate (clases de Tailwind) y no hay que pisarlo */
+@keyframes hx-pop {
+  from {
+    scale: 0;
+  }
+}
+.hx-mark--latest {
+  box-shadow: 0 0 0 0 rgba(41, 197, 12, 0.5);
+  animation:
+    hx-pop 0.45s cubic-bezier(0.3, 1.4, 0.5, 1),
+    hx-ring 1.6s ease-out 0.45s infinite;
+}
+@keyframes hx-ring {
+  to {
+    box-shadow: 0 0 0 9px rgba(41, 197, 12, 0);
+  }
+}
+
+.hx-cue {
+  animation: hx-cue 1.8s ease-in-out infinite;
+}
+@keyframes hx-cue {
+  50% {
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hx-tick,
+  .hx-mark,
+  .hx-mark--latest,
+  .hx-cue {
+    animation: none;
+  }
+}

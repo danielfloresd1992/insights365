@@ -1,0 +1,35 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Variables de entorno: solo el modelo (.env.example) va a git
+.env
+.env.*
+!.env.example
+
+# Skills de diseño de Claude Code: 49 MB de terceros, fuera de git como en Client365.
+# Para otra máquina, copiar la carpeta .claude/skills o volver a instalarlas desde:
+#   design-taste-frontend  github.com/Leonxlnx/taste-skill, commit f6b7657 (skills/taste-skill)
+#   ui-ux-pro-max y sus 6 hermanas  github.com/nextlevelbuilder/ui-ux-pro-max-skill, commit 2de1134
+.claude/skills/

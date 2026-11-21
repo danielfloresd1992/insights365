@@ -1,0 +1,21 @@
+/*  LOS CAMPOS DE /acceso SOBRE LA TINTA
+ *
+ *  Chrome pinta los campos que rellena solo con un azul claro que no se puede quitar (va con !important); se tapa
+ *  con una sombra interior del color del campo, y la letra sigue en marfil. Con el foco se le suma el anillo verde,
+ *  que la sombra taparía. Y Edge trae su propio ojo en las contraseñas: se esconde, porque el formulario ya lleva uno.
+ */
+.login-field:-webkit-autofill,
+.login-field:-webkit-autofill:hover {
+  -webkit-text-fill-color: #fbf8f0;
+  caret-color: #fbf8f0;
+  box-shadow: inset 0 0 0 1000px #3a3528;
+}
+
+.login-field:-webkit-autofill:focus {
+  -webkit-text-fill-color: #fbf8f0;
+  box-shadow: inset 0 0 0 1000px #3a3528, 0 0 0 3px rgb(41 197 12 / 0.35);
+}
+
+.login-field::-ms-reveal {
+  display: none;
+}

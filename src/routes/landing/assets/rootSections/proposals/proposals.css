@@ -1,0 +1,312 @@
+/*  LAS TRES PROPUESTAS DE LO QUE SIGUE A LAS TARJETAS EN '/' (rootSections/proposals)
+
+    pa-* es la propuesta A (la semana en cifras), pb-* la B (un turno, minuto a minuto) y pc-* la C (cada alerta,
+    con su prueba). Lo que se arma al aparecer espera a que su contenedor lleve data-in='true' (useInView); con
+    movimiento reducido llega ya armado, y lo que se mueve solo se queda quieto.
+*/
+
+/* A · LAS GRÁFICAS DEL MOSAICO */
+
+.pa-bar {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  transform: scaleY(0);
+  transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay, 0s);
+}
+.pa-bar--late {
+  transition-delay: calc(var(--delay, 0s) + 0.3s);
+}
+[data-in='true'] .pa-bar {
+  transform: scaleY(1);
+}
+
+.pa-fade {
+  opacity: 0;
+  transform: translateY(6px);
+  transition:
+    opacity 0.6s ease var(--delay, 0s),
+    transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay, 0s);
+}
+[data-in='true'] .pa-fade {
+  opacity: 1;
+  transform: none;
+}
+
+.pa-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 1.4s cubic-bezier(0.4, 0, 0.2, 1) 0.15s;
+}
+[data-in='true'] .pa-line {
+  stroke-dashoffset: 0;
+}
+
+.pa-ring {
+  opacity: 0;
+  stroke-dasharray: 0 100;
+  transition:
+    stroke-dasharray 1.2s cubic-bezier(0.2, 0.7, 0.2, 1) 0.2s,
+    opacity 0.2s ease 0.2s;
+}
+.pa-ring--late {
+  transition-delay: 1.3s;
+}
+[data-in='true'] .pa-ring {
+  opacity: 1;
+  stroke-dasharray: var(--arc) 100;
+}
+
+.pa-grow {
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 1s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay, 0s);
+}
+[data-in='true'] .pa-grow {
+  transform: scaleX(1);
+}
+
+.pa-pop {
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    opacity 0.4s ease var(--delay, 0s),
+    transform 0.5s cubic-bezier(0.3, 1.4, 0.5, 1) var(--delay, 0s);
+}
+[data-in='true'] .pa-pop {
+  opacity: 1;
+  transform: none;
+}
+
+.pa-steps__line {
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform 1.3s cubic-bezier(0.4, 0, 0.2, 1) 0.1s;
+}
+[data-in='true'] .pa-steps__line {
+  transform: scaleX(1);
+}
+
+.pa-tile {
+  box-shadow:
+    inset 0 1px 0 #ffffff,
+    0 24px 40px -34px rgba(47, 42, 30, 0.4);
+}
+
+/* A · LAS HOJAS EN ABANICO: la perspectiva va en el hueco, el giro del conjunto en el escenario y cada hoja se mueve
+   sola (useScrollFrame escribe su transform). La hoja se centra con translate, aparte del transform */
+
+.pa-fan {
+  perspective: 1800px;
+  perspective-origin: 50% 35%;
+}
+.pa-fan__stage {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.pa-fan__sheet {
+  position: absolute;
+  left: 56%;
+  top: 50%;
+  width: min(500px, 36vw);
+  translate: -50% -50%;
+  transform-origin: 50% 115%;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow:
+    0 0 0 1px #ece5d5,
+    0 30px 60px -36px rgba(47, 42, 30, 0.55);
+  will-change: transform;
+}
+
+/* A · EL MURO EN MARCHA: cada columna lleva su lista dos veces y sube media pista; así la vuelta no se nota */
+
+.pa-wall__track {
+  animation: pa-wall-scroll var(--duration, 60s) linear infinite;
+}
+.pa-wall__track--reverse {
+  animation-direction: reverse;
+}
+.pa-wall:hover .pa-wall__track {
+  animation-play-state: paused;
+}
+@keyframes pa-wall-scroll {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pa-bar,
+  .pa-fade,
+  .pa-line,
+  .pa-ring,
+  .pa-grow,
+  .pa-pop,
+  .pa-steps__line {
+    transition: none;
+  }
+  .pa-wall__track {
+    animation: none;
+  }
+}
+
+/* B · EL TURNO: en pantalla ancha, la tarjeta que no está en el centro se apaga un poco; el reloj y los contadores
+   entran al cambiar (llevan key) y el anillo del plano late */
+
+.pb-card {
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@media (min-width: 1024px) {
+  .pb-event[data-active='false'] .pb-card {
+    opacity: 0.4;
+    transform: scale(0.975);
+  }
+}
+.pb-tick {
+  animation: pb-tick 0.45s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes pb-tick {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pb-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pb-pulse 1.6s ease-out infinite;
+}
+@keyframes pb-pulse {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(1.15);
+    opacity: 0;
+  }
+}
+
+/* B · LA SEMANA Y EL MURO: las fichas se mueven con el scroll (useScrollFrame); la alerta nueva del muro entra desde
+   arriba; el teléfono va un poco girado */
+
+.pb-tile {
+  will-change: transform;
+}
+.pb-arrive {
+  animation: pb-arrive 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+@keyframes pb-arrive {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.pb-phone {
+  transform: rotate(2.5deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-card {
+    transition: none;
+  }
+  .pb-tick,
+  .pb-pulse,
+  .pb-arrive {
+    animation: none;
+  }
+}
+
+/* C · EL CATÁLOGO EN CINTAS: cada cinta lleva sus nombres dos veces y corre media pista */
+
+.pc-marquee__track {
+  animation: pc-marquee var(--duration, 80s) linear infinite;
+}
+.pc-marquee__track--reverse {
+  animation-direction: reverse;
+}
+.pc-marquee:hover .pc-marquee__track {
+  animation-play-state: paused;
+}
+@keyframes pc-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* C · EL DESPIECE: la perspectiva va en el hueco, el giro en la pila y cada capa se separa sola (useScrollFrame
+   escribe su transform y su opacidad). La capa se centra con translate, aparte del transform */
+
+.pc-anatomy {
+  perspective: 2200px;
+  perspective-origin: 50% 30%;
+}
+.pc-anatomy__stack {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+.pc-anatomy__layer {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(520px, 40vw);
+  translate: -50% -50%;
+  will-change: transform, opacity;
+}
+
+/* C · LAS TARJETAS QUE SE DAN LA VUELTA: con ratón, al pasar por encima; con el botón de debajo, en cualquier caso */
+
+.pc-flip {
+  perspective: 1400px;
+}
+.pc-flip__inner {
+  position: relative;
+  display: grid;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.pc-flip__face,
+.pc-flip__back {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+}
+.pc-flip__back {
+  transform: rotateY(180deg);
+}
+.pc-flip[data-flipped='true'] .pc-flip__inner {
+  transform: rotateY(180deg);
+}
+@media (hover: hover) and (pointer: fine) {
+  .pc-flip:hover .pc-flip__inner {
+    transform: rotateY(180deg);
+  }
+  .pc-flip[data-flipped='true']:hover .pc-flip__inner {
+    transform: rotateY(180deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pc-marquee__track {
+    animation: none;
+  }
+  .pc-flip__inner {
+    transition: none;
+  }
+}
