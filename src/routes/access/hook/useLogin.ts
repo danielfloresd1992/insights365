@@ -1,8 +1,9 @@
 import { useState, type FormEvent } from 'react'
 import { isAxiosError } from 'axios'
-import { login } from '@/libs/session.api'
+import { login } from '@/ajax/user.ajax'
 import { useAppDispatch } from '@/store/hooks'
 import { signedIn, toSessionUser } from '@/store/slices/session.slice'
+import { emailProblem } from './emailShape'
 
 /*  ENTRAR CON CORREO Y CONTRASEÑA
  *
@@ -14,9 +15,6 @@ import { signedIn, toSessionUser } from '@/store/slices/session.slice'
 
 // LoginErrors = «los errores del formulario: los de un campo van bajo ese campo, el resto arriba del botón»
 export type LoginErrors = { email?: string; password?: string; form?: string }
-
-// EMAIL_SHAPE = «la forma mínima de un correo: algo, arroba, algo, punto, algo»
-const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export function useLogin(onSignedIn: () => void) {
   const dispatch = useAppDispatch()
@@ -30,8 +28,8 @@ export function useLogin(onSignedIn: () => void) {
 
   const validate = (): LoginErrors => {
     const found: LoginErrors = {}
-    if (!email.trim()) found.email = 'Escribe tu correo.'
-    else if (!EMAIL_SHAPE.test(email.trim())) found.email = 'Revisa el correo: le falta algo.'
+    const emailError = emailProblem(email)
+    if (emailError) found.email = emailError
     if (!password) found.password = 'Escribe tu contraseña.'
     return found
   }

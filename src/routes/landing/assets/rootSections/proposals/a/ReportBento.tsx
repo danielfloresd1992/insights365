@@ -139,13 +139,13 @@ export default function ReportBento() {
                   <th scope='col' className='py-2 pr-2 font-semibold'>
                     <span className='sr-only'>Concepto</span>
                   </th>
-                  <th scope='col' className='py-2 pr-2 text-right font-semibold'>
+                  <th scope='col' className='px-2 py-2 text-center font-semibold'>
                     Diurno
                   </th>
-                  <th scope='col' className='py-2 pr-2 text-right font-semibold'>
+                  <th scope='col' className='px-2 py-2 text-center font-semibold'>
                     Nocturno
                   </th>
-                  <th scope='col' className='py-2 text-right font-semibold'>
+                  <th scope='col' className='py-2 pl-2 text-center font-semibold'>
                     Total
                   </th>
                 </tr>
@@ -156,9 +156,9 @@ export default function ReportBento() {
                     <th scope='row' className='py-2.5 pr-3 font-medium text-[#2f2a1e]'>
                       {row.label}
                     </th>
-                    <td className='py-2.5 pr-2 text-right tabular-nums text-[#564e40]'>{row.day}</td>
-                    <td className='py-2.5 pr-2 text-right tabular-nums text-[#564e40]'>{row.night}</td>
-                    <td className='py-2.5 text-right font-semibold tabular-nums text-[#2f2a1e]'>{row.total}</td>
+                    <td className='px-2 py-2.5 text-center tabular-nums text-[#564e40]'>{row.day}</td>
+                    <td className='px-2 py-2.5 text-center tabular-nums text-[#564e40]'>{row.night}</td>
+                    <td className='py-2.5 pl-2 text-center font-semibold tabular-nums text-[#2f2a1e]'>{row.total}</td>
                   </tr>
                 ))}
               </tbody>

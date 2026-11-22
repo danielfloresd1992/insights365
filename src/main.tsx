@@ -4,9 +4,11 @@ import { Provider } from 'react-redux'
 import { RouterProvider } from 'react-router/dom'
 import { store } from '@/store'
 import { router } from '@/app/router'
+import '@/i18n'
 import './index.css'
 
-/*  EL ARRANQUE: el estado global (Redux) por fuera y las rutas por dentro, para que toda página lea el store */
+/*  EL ARRANQUE: el idioma (i18n) antes que nada, el estado global (Redux) por fuera y las rutas por dentro, para que
+ *  toda página lea el store y sus textos */
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <Provider store={store}>

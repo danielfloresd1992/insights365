@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { fetchSession } from '@/libs/session.api'
+import { fetchSession } from '@/ajax/user.ajax'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { signedIn, signedOut, toSessionUser } from '@/store/slices/session.slice'
 

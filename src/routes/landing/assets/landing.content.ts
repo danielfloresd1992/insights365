@@ -4,10 +4,11 @@
  *  agosto de 2026, catorce turnos de catorce. Se quitó el nombre del restaurante; nada más se tocó ni se inventó.
  */
 
-// LOGIN_PATH, WALL_PATH = «la pantalla para entrar con correo y contraseña, y el muro de alertas, que pide sesión»
+// LOGIN_PATH, WALL_PATH = «la pantalla para entrar con correo y contraseña, y el panel en vivo, donde está el muro de
+// alertas; el panel pide sesión»
 export const LOGIN_PATH = '/acceso'
-export const WALL_PATH = '/muro'
-// PORTAL_PATH = «a dónde lleva Entrar al portal: al muro; sin sesión abierta, el muro manda a entrar»
+export const WALL_PATH = '/en-vivo'
+// PORTAL_PATH = «a dónde lleva Entrar al portal: al panel en vivo; sin sesión abierta, el panel manda a entrar»
 export const PORTAL_PATH = WALL_PATH
 
 // PALETTE = «los colores de la familia Jarvis365: marfil, tinta, el verde de la marca solo en detalles y la tierra

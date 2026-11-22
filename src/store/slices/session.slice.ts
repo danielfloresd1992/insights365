@@ -1,5 +1,5 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import type { ApiUser } from '@/libs/session.api'
+import type { ApiUser } from '@/ajax/user.ajax'
 
 /*  LA SESIÓN: quién está viendo el portal
  *

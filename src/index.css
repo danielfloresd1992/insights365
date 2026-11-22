@@ -20,6 +20,120 @@
   --font-manrope: "Manrope", ui-sans-serif, system-ui, sans-serif;
   --font-plex: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
   --font-plex-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* Los colores del portal con sesión, con los colores de Amazonas: cambian con el tema (.dark, más abajo). Fuera del
+     portal (portada, /acceso) valen siempre lo claro, que es lo de siempre: bg-portal-page, text-portal-ink… */
+  --color-portal-page: #ffffff;
+  --color-portal-surface: #ffffff;
+  --color-portal-bar: rgb(255 255 255 / 0.88);
+  --color-portal-line: #ece5d5;
+  --color-portal-ink: #2f2a1e;
+  --color-portal-muted: #564e40;
+  --color-portal-ctl: #fbf8f0;
+  --color-portal-ring: #ddd3bd;
+  --color-portal-on: #ffffff;
+  --color-portal-soft: #f4f2ee;
+  --color-portal-avatar: #f7f2e4;
+  --color-portal-danger: #bf3330;
+  --color-portal-danger-bg: #fbeceb;
+}
+
+/*  EL MODO OSCURO DEL PORTAL
+ *
+ *  El portal pone la clase dark en <html> mientras está abierto (layouts/hook/usePortalDocument) y la quita al salir.
+ *  Con ella cambian los colores de arriba, y la variante dark: de Tailwind sirve para lo demás. Tinta cálida en vez de
+ *  negro, texto marfil y el mismo verde.
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*  El color de cada familia de alertas (libs/alertFamily): su icono, su anillo y el fondo suave del círculo del muro.
+ *  En claro, tonos con contraste sobre blanco; en .dark, más claros para leerse sobre la tinta. */
+:root {
+  --family-demoras: #c0302b;
+  --family-clientes: #946512;
+  --family-personal: #2f2a1e;
+  --family-comida: #9a5d26;
+  --family-protocolo: #66625c;
+  --family-local: #7d621b;
+  --family-otra: #564e40;
+}
+
+.dark {
+  --family-demoras: #ec6a63;
+  --family-clientes: #e6bc63;
+  --family-personal: #e6dcc6;
+  --family-comida: #dda068;
+  --family-protocolo: #bdb6a8;
+  --family-local: #d2b158;
+  --family-otra: #b3aa96;
+}
+
+.dark {
+  --color-portal-page: #1c1913;
+  --color-portal-surface: #25211a;
+  --color-portal-bar: rgb(28 25 19 / 0.88);
+  --color-portal-line: #3a342a;
+  --color-portal-ink: #f5f0e3;
+  --color-portal-muted: #b3aa96;
+  --color-portal-ctl: #2a251c;
+  --color-portal-ring: #4a4336;
+  --color-portal-on: #3f3829;
+  --color-portal-soft: #2f2a21;
+  --color-portal-avatar: #2f2a21;
+  --color-portal-danger: #f4a29c;
+  --color-portal-danger-bg: #3a1f1c;
+  color-scheme: dark;
+}
+
+html.dark body {
+  background: #1c1913;
+}
+
+/*  UNA ALERTA NUEVA EN EL MURO (components/AlertWall/assets/WallTimeline)
+ *
+ *  wall-enter abre su hueco desde cero (las filas de debajo bajan con él) y wall-enter-content la trae desde la
+ *  izquierda, un poco después. wall-enter-clip recorta mientras tanto. El muro quita las tres clases al terminar.
+ *  Con movimiento reducido aparece sin más.
+ */
+@keyframes wall-make-room {
+  from {
+    grid-template-rows: 0fr;
+  }
+  to {
+    grid-template-rows: 1fr;
+  }
+}
+
+@keyframes wall-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-56px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.wall-enter {
+  display: grid;
+  animation: wall-make-room 450ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+.wall-enter-clip {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.wall-enter-content {
+  animation: wall-slide-in 560ms 140ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wall-enter,
+  .wall-enter-content {
+    animation: none;
+  }
 }
 
 /*  LO QUE SE MUEVE EN LAS PORTADAS
