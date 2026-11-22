@@ -1,13 +1,15 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useState, type CSSProperties, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Novelty } from '@/ajax/novelty.ajax'
-import { CameraIcon, PathIcon } from '@/components/PortalIcons'
+import { CameraIcon, ImagesIcon, PathIcon } from '@/components/PortalIcons'
 import { alertFamily, type FamilyLook } from '@/libs/alertFamily'
 import { formatDuration } from '@/libs/formatDuration'
 import { imageUrl } from '@/libs/imageUrl'
 import { videoUrl } from '@/libs/videoUrl'
 import LoopVideo from './LoopVideo'
 import { clockOf, fullDateOf, groupByDay, titleOf } from '../hook/timeline'
+import { viewerItems } from '../hook/viewerItems'
+import ImageViewer from './ImageViewer'
 
 /*  EL MURO COMO LÍNEA DE TIEMPO. Solo pinta.
  *
@@ -46,7 +48,7 @@ function Entering({ active, children }: { active: boolean; children: ReactNode }
 }
 
 // ROW = «las columnas de una fila»: hora, raya y alerta; en el móvil solo raya y alerta
-const ROW = 'grid grid-cols-[24px_minmax(0,1fr)] sm:grid-cols-[88px_32px_minmax(0,1fr)]'
+const ROW = 'grid grid-cols-[24px_minmax(0,1fr)] @md/wall:grid-cols-[72px_32px_minmax(0,1fr)]'
 
 // familyStyle = «el color de la familia, para lo que pinta con var(--family)»
 const familyStyle = (look: FamilyLook) => ({ '--family': `var(--family-${look.id})` }) as CSSProperties
@@ -55,11 +57,11 @@ const familyStyle = (look: FamilyLook) => ({ '--family': `var(--family-${look.id
 function Rail({ look }: { look?: FamilyLook }) {
   return (
     <div aria-hidden='true' className='relative self-stretch'>
-      <span className='absolute inset-y-0 left-[11px] w-0.5 bg-portal-line sm:left-[15px]' />
+      <span className='absolute inset-y-0 left-[11px] w-0.5 bg-portal-line @md/wall:left-[15px]' />
       {look && (
         <span
           style={familyStyle(look)}
-          className='absolute -left-[3px] top-[13px] grid h-[30px] w-[30px] place-items-center rounded-full bg-[color-mix(in_srgb,var(--family)_14%,var(--color-portal-page))] text-[var(--family)] shadow-[0_0_0_4px_var(--color-portal-page)] ring-[1.5px] ring-inset ring-[var(--family)] sm:left-[1px] sm:top-[15px]'
+          className='absolute -left-[3px] top-[13px] grid h-[30px] w-[30px] place-items-center rounded-full bg-[color-mix(in_srgb,var(--family)_14%,var(--color-portal-page))] text-[var(--family)] shadow-[0_0_0_4px_var(--color-portal-page)] ring-[1.5px] ring-inset ring-[var(--family)] @md/wall:left-[1px] @md/wall:top-[15px]'
         >
           <PathIcon d={look.icon} size={16} />
         </span>
@@ -81,9 +83,9 @@ export default function WallTimeline({ items, now, placeOf, englishNames, freshI
           {/* Un día que aparece con la alerta nueva (el primero de «Hoy») entra con ella */}
           <Entering active={day.items.every(isFresh)}>
             <div className={`${ROW} items-center`}>
-              <span className='hidden sm:block' />
+              <span className='hidden @md/wall:block' />
               <Rail />
-              <h3 className='m-0 flex items-baseline justify-between gap-4 pb-4 pl-1 pt-2 text-[15px] font-semibold sm:pl-0'>
+              <h3 className='m-0 flex items-baseline justify-between gap-4 pb-4 pl-1 pt-2 text-[15px] font-semibold @md/wall:pl-0'>
                 {day.label}
                 <span className='shrink-0 text-[13px] font-medium text-portal-muted'>{t('wall.alertCount', { count: day.items.length })}</span>
               </h3>
@@ -129,32 +131,59 @@ function TimelineAlert({ novelty, locale, place, englishNames }: TimelineAlertPr
   const photo = imageUrl(novelty.imageToShare || novelty.images[0]?.url)
   const video = videoUrl(novelty.videoUrl)
   // MEDIA = «el hueco de la foto o el vídeo»: arriba en el móvil, a la izquierda en escritorio
-  const MEDIA = 'aspect-video w-full bg-portal-soft sm:aspect-[16/10] sm:w-[264px] sm:shrink-0'
+  const MEDIA = 'aspect-video w-full bg-portal-soft @md/wall:aspect-[16/10] @md/wall:w-[200px] @3xl/wall:w-[264px] @md/wall:shrink-0'
+  // Al pulsar la foto o el vídeo se abre el visor con todo lo de la alerta
+  const [viewerOpen, setViewerOpen] = useState(false)
+  const gallery = viewerItems(novelty, { video: t('viewer.video'), shared: t('viewer.shared') })
+  const media = video ? (
+    <LoopVideo src={video} poster={photo} label={`${title}, ${place}`} className='h-full w-full' />
+  ) : photo ? (
+    <img src={photo} alt={`${title}, ${place}`} loading='lazy' decoding='async' className='h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]' />
+  ) : null
 
   return (
     <div className={`${ROW} items-start`}>
-      <p className='m-0 hidden flex-col gap-0.5 pt-4 sm:flex'>
+      <p className='m-0 hidden flex-col gap-0.5 pt-4 @md/wall:flex'>
         <time dateTime={novelty.date ?? undefined} title={fullDate} className='text-base font-semibold tabular-nums text-portal-ink'>
           {clock}
         </time>
         {shift && <span className='text-xs text-portal-muted'>{shift}</span>}
       </p>
       <Rail look={family} />
-      <article className='mb-4 ml-1 flex flex-col overflow-hidden rounded-2xl bg-portal-surface ring-1 ring-inset ring-portal-line sm:ml-0 sm:flex-row'>
-        {/* Con vídeo, el vídeo en bucle en el sitio de la foto; si no, la foto */}
-        {video ? (
-          <LoopVideo src={video} poster={photo} label={`${title}, ${place}`} className={MEDIA} />
-        ) : photo ? (
-          <img src={photo} alt={`${title}, ${place}`} loading='lazy' decoding='async' className={`object-cover ${MEDIA}`} />
+      <article className='mb-4 ml-1 flex flex-col overflow-hidden rounded-2xl bg-portal-surface ring-1 ring-inset ring-portal-line @md/wall:ml-0 @md/wall:flex-row'>
+        {/* Con vídeo, el vídeo en bucle en el sitio de la foto; si no, la foto. Pulsarlo abre el visor */}
+        {media && gallery.length > 0 ? (
+          <button
+            type='button'
+            onClick={() => setViewerOpen(true)}
+            aria-label={t('viewer.open', { title })}
+            className={`group relative block cursor-zoom-in overflow-hidden focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-[#29c50c] ${MEDIA}`}
+          >
+            {media}
+            {gallery.length > 1 && (
+              <span className='pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[11px] font-semibold text-white'>
+                <ImagesIcon size={13} />
+                {t('viewer.count', { count: gallery.length })}
+              </span>
+            )}
+          </button>
         ) : (
           <div aria-hidden='true' className={`grid place-items-center text-portal-muted ${MEDIA}`}>
             <CameraIcon size={26} />
           </div>
         )}
-        <div className='flex min-w-0 flex-1 flex-col gap-2 p-4 sm:px-5 sm:py-[18px]'>
+        {viewerOpen && (
+          <ImageViewer
+            items={gallery}
+            heading={title}
+            subheading={[place, clock].filter(Boolean).join(' · ')}
+            onClose={() => setViewerOpen(false)}
+          />
+        )}
+        <div className='flex min-w-0 flex-1 flex-col gap-2 p-4 @md/wall:px-5 @md/wall:py-[18px]'>
           <div className='flex items-center gap-4'>
             <p className='m-0 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1'>
-              <time dateTime={novelty.date ?? undefined} title={fullDate} className='text-[15px] font-semibold tabular-nums sm:hidden'>
+              <time dateTime={novelty.date ?? undefined} title={fullDate} className='text-[15px] font-semibold tabular-nums @md/wall:hidden'>
                 {clock}
               </time>
               <span className='text-base font-bold tracking-[-0.01em] text-portal-ink'>{place}</span>
@@ -175,7 +204,7 @@ function TimelineAlert({ novelty, locale, place, englishNames }: TimelineAlertPr
                 </li>
               ))}
               {/* En el móvil no hay columna de la hora: el turno va aquí */}
-              {shift && <li className='rounded-full bg-portal-ctl px-2.5 py-1 text-xs font-medium text-portal-ink ring-1 ring-portal-line sm:hidden'>{shift}</li>}
+              {shift && <li className='rounded-full bg-portal-ctl px-2.5 py-1 text-xs font-medium text-portal-ink ring-1 ring-portal-line @md/wall:hidden'>{shift}</li>}
             </ul>
           )}
         </div>

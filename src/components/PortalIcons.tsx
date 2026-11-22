@@ -97,6 +97,34 @@ export function PathIcon({ d, strokeWidth = 2, ...props }: IconProps & { d: stri
   )
 }
 
+// ChevronLeftIcon, ChevronRightIcon = «anterior» y «siguiente» (el visor de imágenes)
+export function ChevronLeftIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <path d='M15 5l-7 7 7 7' />
+    </Stroke>
+  )
+}
+
+export function ChevronRightIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <path d='M9 5l7 7-7 7' />
+    </Stroke>
+  )
+}
+
+// ImagesIcon = «varias imágenes», para la marca de la alerta que tiene más de una
+export function ImagesIcon(props: IconProps) {
+  return (
+    <Stroke {...props}>
+      <rect x='7' y='7' width='14' height='12' rx='2' />
+      <path d='M17 4H5a2 2 0 0 0-2 2v10' />
+      <path d='m7 16 4-4 3 3 2-2 5 5' />
+    </Stroke>
+  )
+}
+
 // CameraIcon = «la cámara», para el hueco de una alerta sin foto
 export function CameraIcon(props: IconProps) {
   return (

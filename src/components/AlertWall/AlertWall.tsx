@@ -119,7 +119,7 @@ export default function AlertWall({ className = '' }: { className?: string }) {
   const toggle = (id: string) => setSelected(current => (current.includes(id) ? current.filter(entry => entry !== id) : [...current, id]))
 
   return (
-    <section aria-labelledby='alert-wall-title' className={className}>
+    <section aria-labelledby='alert-wall-title' className={`@container/wall ${className}`}>
       <div className='flex flex-wrap items-center justify-between gap-x-6 gap-y-2'>
         <div className='flex flex-wrap items-center gap-x-3.5 gap-y-2'>
           <h2 id='alert-wall-title' className='m-0 text-[1.625rem] font-semibold leading-tight tracking-[-0.02em]'>
@@ -172,7 +172,7 @@ export default function AlertWall({ className = '' }: { className?: string }) {
                   </p>
                 )}
                 {feed.hasMore && (
-                  <div className='mt-6 sm:pl-[120px]'>
+                  <div className='mt-6 @md/wall:pl-[104px]'>
                     <button
                       type='button'
                       onClick={feed.loadMore}

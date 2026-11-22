@@ -10,17 +10,17 @@ export function WallLoading({ label }: { label?: string }) {
   return (
     <div role='status' aria-label={label ?? t('wall.loading')}>
       {[0, 1, 2].map(slot => (
-        <div key={slot} className='grid grid-cols-[24px_minmax(0,1fr)] items-start sm:grid-cols-[88px_32px_minmax(0,1fr)]'>
-          <div className='hidden space-y-2 pt-4 sm:block'>
+        <div key={slot} className='grid grid-cols-[24px_minmax(0,1fr)] items-start @md/wall:grid-cols-[72px_32px_minmax(0,1fr)]'>
+          <div className='hidden space-y-2 pt-4 @md/wall:block'>
             <div className='h-4 w-12 animate-pulse rounded bg-portal-soft' />
             <div className='h-3 w-16 animate-pulse rounded bg-portal-soft' />
           </div>
           <div aria-hidden='true' className='relative self-stretch'>
-            <span className='absolute inset-y-0 left-[11px] w-0.5 bg-portal-line sm:left-[15px]' />
+            <span className='absolute inset-y-0 left-[11px] w-0.5 bg-portal-line @md/wall:left-[15px]' />
           </div>
-          <div className='mb-4 ml-1 flex flex-col overflow-hidden rounded-2xl bg-portal-surface ring-1 ring-inset ring-portal-line sm:ml-0 sm:flex-row'>
-            <div className='aspect-video w-full animate-pulse bg-portal-soft sm:aspect-[16/10] sm:w-[264px] sm:shrink-0' />
-            <div className='flex-1 space-y-3 p-4 sm:px-5 sm:py-[18px]'>
+          <div className='mb-4 ml-1 flex flex-col overflow-hidden rounded-2xl bg-portal-surface ring-1 ring-inset ring-portal-line @md/wall:ml-0 @md/wall:flex-row'>
+            <div className='aspect-video w-full animate-pulse bg-portal-soft @md/wall:aspect-[16/10] @md/wall:w-[200px] @3xl/wall:w-[264px] @md/wall:shrink-0' />
+            <div className='flex-1 space-y-3 p-4 @md/wall:px-5 @md/wall:py-[18px]'>
               <div className='h-3 w-1/3 animate-pulse rounded bg-portal-soft' />
               <div className='h-4 w-2/3 animate-pulse rounded bg-portal-soft' />
               <div className='h-3 w-1/4 animate-pulse rounded bg-portal-soft' />
