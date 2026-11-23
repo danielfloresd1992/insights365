@@ -1,0 +1,4 @@
+# Las rutas del portal (/en-vivo, /acceso, /acceso/restablecer…) las resuelve React Router en el navegador.
+# Netlify sirve index.html para cualquier dirección que no sea un archivo, con 200, y la app pinta la ruta.
+# Los archivos que existen (assets, posters, favicon) se sirven tal cual: la regla solo entra si no hay archivo.
+/*    /index.html    200
