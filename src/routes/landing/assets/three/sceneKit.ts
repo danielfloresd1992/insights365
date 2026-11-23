@@ -58,6 +58,8 @@ type LabelOptions = {
   weight?: number
   // worldHeight = «cuánto mide de alto la etiqueta dentro de la escena»
   worldHeight: number
+  // background = «una píldora de color detrás del texto, para que se lea sobre cualquier fondo»; sin ella, solo letra
+  background?: string
 }
 
 // LABEL_FONT_PX = «el tamaño al que se dibuja el texto en el lienzo, antes de llevarlo a la escena»
@@ -75,11 +77,17 @@ export function makeLabelSprite(text: string, options: LabelOptions) {
     const context = canvas.getContext('2d')
     if (!context) return
     context.font = font
-    const padding = LABEL_FONT_PX * 0.2
+    const padding = LABEL_FONT_PX * (options.background ? 0.55 : 0.2)
     const width = Math.ceil(context.measureText(text).width + padding * 2)
-    const height = Math.ceil(LABEL_FONT_PX * 1.3)
+    const height = Math.ceil(LABEL_FONT_PX * (options.background ? 1.6 : 1.3))
     canvas.width = width
     canvas.height = height
+    if (options.background) {
+      context.fillStyle = options.background
+      context.beginPath()
+      context.roundRect(0, 0, width, height, height / 2)
+      context.fill()
+    }
     context.font = font
     context.fillStyle = options.color
     context.textAlign = 'center'

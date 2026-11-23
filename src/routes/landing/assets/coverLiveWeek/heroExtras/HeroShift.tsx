@@ -18,8 +18,9 @@ const HOURS = [12, 13, 14, 15, 16]
 export function ShiftPill({ cycle }: { cycle: number }) {
   const clock = cycle >= 0 ? formatClock(alertMinute(cycle)) : formatClock(SHIFT_START_MINUTES)
   return (
-    <p className='landing-enter mb-6 inline-flex items-center gap-2.5 rounded-full bg-white/85 py-1.5 pl-2 pr-3.5 text-sm text-[#2f2a1e] ring-1 ring-[#ece5d5]'>
-      <span className='inline-flex items-center gap-1.5 rounded-full bg-[#f2fbee] px-2 py-0.5 text-xs font-semibold text-[#177406]'>
+    // En los colores de noche de Amazonas (AMAZONAS_NIGHT): el hero va en oscuro
+    <p className='landing-enter mb-6 inline-flex items-center gap-2.5 rounded-full bg-[#25211a] py-1.5 pl-2 pr-3.5 text-sm text-[#f5f0e3] ring-1 ring-[#3a342a]'>
+      <span className='inline-flex items-center gap-1.5 rounded-full bg-[#29c50c]/[0.14] px-2 py-0.5 text-xs font-semibold text-[#29c50c]'>
         <span className='landing-live-dot h-2 w-2 rounded-full bg-[#29c50c]' aria-hidden='true' />
         En vivo
       </span>
@@ -38,8 +39,9 @@ export function ShiftRuler({ cycle }: { cycle: number }) {
   const latest = marked[marked.length - 1]
 
   return (
-    // Fondo en la tinta de Amazonas (#2f2a1e, pedido del usuario); letra en marfil para que se lea sobre ella
-    <div className='landing-enter mt-8 max-w-[33rem] rounded-2xl bg-[#2f2a1e] p-4 shadow-[0_24px_48px_-30px_rgba(31,27,20,0.7)]' style={enterDelay(280)}>
+    // Fondo en la tinta de Amazonas (#2f2a1e, pedido del usuario); letra en marfil para que se lea sobre ella. Con su
+    // canto, para que no se pierda sobre el hero oscuro
+    <div className='landing-enter mt-8 max-w-[33rem] rounded-2xl bg-[#2f2a1e] p-4 shadow-[0_24px_48px_-30px_rgba(0,0,0,0.8)] ring-1 ring-[#4a4336]' style={enterDelay(280)}>
       <div className='flex items-baseline justify-between gap-3'>
         <p className='text-xs font-semibold uppercase tracking-[0.12em] text-[#f4f2ee]'>El turno, alerta por alerta</p>
         <p className='text-xs text-[#ddd3bd]'>
@@ -82,7 +84,7 @@ export function ShiftRuler({ cycle }: { cycle: number }) {
 export function ScrollCue() {
   return (
     <div className='hidden justify-center pb-6 lg:flex'>
-      <a href='#que-se-vigila' className='landing-link group inline-flex flex-col items-center gap-1 text-sm font-medium text-[#564e40]'>
+      <a href='#que-se-vigila' className='landing-link group inline-flex flex-col items-center gap-1 text-sm font-medium text-[#b3aa96]'>
         Lo que vigilamos
         <svg viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='currentColor' strokeWidth='1.8' strokeLinecap='round' strokeLinejoin='round' className='hx-cue' aria-hidden='true'>
           <path d='M6 9l6 6 6-6' />

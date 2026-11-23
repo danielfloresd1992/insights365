@@ -63,7 +63,8 @@ const BARS_AMAZONAS: WeekBarsPalette = {
   cap: AMAZONAS.copper,
   capEmissive: AMAZONAS.copper,
   capEmissiveIntensity: 0.1,
-  countLabel: AMAZONAS.ochreText,
+  // Las cifras flotan sobre el escenario, que en el hero es oscuro: en el ocre claro, que se lee sobre él
+  countLabel: AMAZONAS.ochre,
   dayLabel: AMAZONAS.inkSoft,
 }
 

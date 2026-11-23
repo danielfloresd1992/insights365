@@ -215,6 +215,24 @@ export const AMAZONAS = {
   critical: '#d03b3b',
 } as const
 
+/*  AMAZONAS DE NOCHE: los colores del modo oscuro del portal (los --color-portal-* de .dark en src/index.css), para el
+    hero de la portada D, que va en oscuro aunque el resto de la página siga en claro (pedido del usuario).
+    Sobre page, ink y muted pasan de 7:1. El verde de la marca, que en claro es solo relleno, aquí sí vale como letra
+    (7,6:1 sobre page); greenSoft es el fondo de la insignia «En vivo».
+*/
+export const AMAZONAS_NIGHT = {
+  page: '#1c1913',
+  surface: '#25211a',
+  ctl: '#2a251c',
+  soft: '#2f2a21',
+  line: '#3a342a',
+  ring: '#4a4336',
+  ink: '#f5f0e3',
+  muted: '#b3aa96',
+  green: '#29c50c',
+  greenSoft: 'rgba(41, 197, 12, 0.14)',
+} as const
+
 // AMAZONAS_DELAY_COLORS = «las cinco demoras con colores de la casa. Ninguna en verde: el verde es la marca y las
 // barras de la semana. Preparación en cobre, el mismo remate de las barras, que cuentan justo esas demoras»
 export const AMAZONAS_DELAY_COLORS: Record<DelayKind, string> = {

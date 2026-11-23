@@ -65,7 +65,9 @@ export default function LandingController({ fixedCover }: LandingControllerProps
   const cover = fixedCover ?? (isCoverId(variant) ? variant : null)
   // pausedCover = «qué prototipo se pausó; al cambiar de prototipo deja de coincidir y el nuevo arranca en marcha»
   const [pausedCover, setPausedCover] = useState<CoverId | null>(null)
-  const paused = cover !== null && pausedCover === cover
+  // liveAway = «en la portada D, el carrusel del hero enseña otra escena»: la sala se para mientras no se ve
+  const [liveAway, setLiveAway] = useState(false)
+  const paused = cover !== null && (pausedCover === cover || (cover === 'd' && liveAway))
 
   const scene = useThreeScene(cover ? SCENES[cover] : null, paused)
   const alertCycle = useCycleIndex(scene.clockRef, FLOOR_ALERT_SECONDS, FLOOR_ALERT_START_SECONDS, cover === 'a' || cover === 'd')
@@ -119,6 +121,7 @@ export default function LandingController({ fixedCover }: LandingControllerProps
           mainRef={mainRef}
           footer={withSections ? <SiteFooter /> : null}
           extras={withSections ? buildHeroExtras(alertCycle) : undefined}
+          onLiveActive={active => setLiveAway(!active)}
         >
           {withSections ? <RootSections cardsVariant={cardsVariant} sectionsVariant={sectionsVariant} /> : null}
         </CoverLiveWeek>

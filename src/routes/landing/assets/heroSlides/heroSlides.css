@@ -1,0 +1,20 @@
+/*  EL CARRUSEL DE ESCENAS DEL HERO DE '/' (heroSlides/HeroSlides)
+
+    El rótulo entra al cambiar de escena. Con movimiento reducido, quieto.
+*/
+
+.hs-caption {
+  animation: hs-caption 0.55s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes hs-caption {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hs-caption {
+    animation: none;
+  }
+}
