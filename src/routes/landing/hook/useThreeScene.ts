@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type RefObject } from 'react'
+import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
 import * as THREE from 'three'
 import { useStillScene } from './useStillScene'
 
@@ -55,6 +55,9 @@ export function useThreeScene(createScene: SceneFactory | null, paused: boolean)
   // clockRef = «los segundos que lleva corriendo la escena; la tarjeta de novedades lee el mismo reloj»
   const clockRef = useRef(0)
   const pausedRef = useRef(paused)
+  // drawRef = «dibuja ya el fotograma actual»: una escena quieta no tiene bucle, y si cambia lo que enseña (un
+  // indicador elegido) hay que pedírselo (redraw)
+  const drawRef = useRef<(() => void) | null>(null)
   const [webglAvailable] = useState(detectWebGL)
   // readyScene, brokenScene = «la escena que ya dibujó su primer fotograma, y la que rompió un shader»; se guardan
   // por escena para que al cambiar de portada la nueva empiece sin listo ni roto
@@ -112,6 +115,7 @@ export function useThreeScene(createScene: SceneFactory | null, paused: boolean)
       // Se avisa en el fotograma siguiente, ya pintado, para que el póster se aparte sobre la escena entera
       requestAnimationFrame(() => setReadyScene(() => createScene))
     }
+    drawRef.current = drawCurrent
 
     const loop = (timestamp: number) => {
       frameId = requestAnimationFrame(loop)
@@ -152,6 +156,7 @@ export function useThreeScene(createScene: SceneFactory | null, paused: boolean)
 
     return () => {
       disposed = true
+      drawRef.current = null
       cancelAnimationFrame(frameId)
       window.clearTimeout(fontTimer)
       resizeObserver.disconnect()
@@ -165,5 +170,6 @@ export function useThreeScene(createScene: SceneFactory | null, paused: boolean)
 
   const failed = !webglAvailable || (createScene !== null && brokenScene === createScene)
   const ready = createScene !== null && readyScene === createScene
-  return { containerRef, clockRef, ready, failed, still }
+  const redraw = useCallback(() => drawRef.current?.(), [])
+  return { containerRef, clockRef, ready, failed, still, redraw }
 }

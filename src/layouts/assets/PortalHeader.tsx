@@ -11,7 +11,8 @@ import VoicePanel from './VoicePanel'
 /*  LA BARRA DEL PORTAL (con sesión), fija arriba
  *
  *  Siempre a la vista: fija en lo alto, translúcida y con desenfoque, para que el contenido pase por debajo. La marca,
- *  el Panel en vivo y, a la derecha, el idioma, el tema, la voz de las alertas, quién está dentro y salir.
+ *  las pestañas (Panel en vivo y Reporte semanal e intersemanal) y, a la derecha, el idioma, el tema, la voz de las
+ *  alertas, quién está dentro y salir.
  *  En el móvil (por debajo de md) quedan la marca, el tema y un botón de menú que despliega lo demás.
  *  Mide 64 px en el móvil y 72 en escritorio: el marco del portal deja ese hueco arriba.
  *
@@ -42,7 +43,7 @@ function initialsOf(name: string) {
 }
 
 const navClasses = ({ isActive }: { isActive: boolean }) =>
-  `landing-link inline-flex h-full items-center px-0.5 text-sm font-semibold ${
+  `landing-link inline-flex h-full items-center whitespace-nowrap px-0.5 text-sm font-semibold ${
     isActive ? 'text-portal-ink shadow-[inset_0_-2px_0_#29c50c]' : 'text-portal-muted hover:text-portal-ink'
   }`
 
@@ -86,9 +87,14 @@ export default function PortalHeader({ userName, onSignOut, signingOut }: Portal
           </span>
           insights365
         </Link>
-        <nav aria-label={t('portal.navLabel')} className='hidden self-stretch md:flex'>
+        <nav aria-label={t('portal.navLabel')} className='hidden gap-7 self-stretch md:flex'>
           <NavLink to='/en-vivo' className={navClasses}>
             {t('portal.livePanel')}
+          </NavLink>
+          {/* el nombre entero no cabe junto a los controles por debajo de xl (1280 px): ahí, «Reportes» */}
+          <NavLink to='/reportes' className={navClasses}>
+            <span className='xl:hidden'>{t('portal.weeklyReportShort')}</span>
+            <span className='hidden xl:inline'>{t('portal.weeklyReport')}</span>
           </NavLink>
         </nav>
 
@@ -162,7 +168,7 @@ export default function PortalHeader({ userName, onSignOut, signingOut }: Portal
             id='menu-movil'
             className='absolute inset-x-0 top-full flex max-h-[calc(100dvh-4rem)] flex-col gap-[18px] overflow-y-auto border-b border-portal-line bg-portal-surface px-4 pb-5 pt-3 shadow-[0_24px_48px_-24px_rgba(0,0,0,0.4)] md:hidden'
           >
-            <nav aria-label={t('portal.navLabel')}>
+            <nav aria-label={t('portal.navLabel')} className='flex flex-col gap-2'>
               <NavLink
                 to='/en-vivo'
                 onClick={closeMenu}
@@ -170,6 +176,13 @@ export default function PortalHeader({ userName, onSignOut, signingOut }: Portal
               >
                 {t('portal.livePanel')}
                 <span aria-hidden='true' className={LIVE_DOT} />
+              </NavLink>
+              <NavLink
+                to='/reportes'
+                onClick={closeMenu}
+                className='flex h-[52px] items-center rounded-xl bg-portal-ctl px-4 text-base font-semibold text-portal-ink'
+              >
+                {t('portal.weeklyReport')}
               </NavLink>
             </nav>
             <LanguageSwitch wide />
