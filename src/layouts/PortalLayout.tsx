@@ -1,4 +1,4 @@
-import { useState, type CSSProperties } from 'react'
+import { useMemo, useState, type CSSProperties } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Navigate, Outlet, useLocation, useNavigate } from 'react-router'
 import { logout } from '@/ajax/user.ajax'
@@ -6,6 +6,7 @@ import { stopSpeaking } from '@/libs/speech'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { signedOut } from '@/store/slices/session.slice'
 import PortalHeader from './assets/PortalHeader'
+import { useAlertNotifications } from './hook/useAlertNotifications'
 import { usePortalDocument } from './hook/usePortalDocument'
 import { useSessionCheck } from './hook/useSessionCheck'
 
@@ -13,7 +14,8 @@ import { useSessionCheck } from './hook/useSessionCheck'
  *
  *  Antes de enseñar nada pregunta si hay sesión. Sin ella, manda a /acceso y apunta a dónde volver. Con ella, pinta la
  *  barra del portal, fija arriba, y debajo la pantalla de la ruta, con el hueco de la barra (64 px en el móvil, 72 en
- *  escritorio). Mientras está abierto pone en el documento el tema y el idioma elegidos (usePortalDocument).
+ *  escritorio). Mientras está abierto pone en el documento el tema y el idioma elegidos (usePortalDocument) y avisa
+ *  con un aviso del sistema de cada alerta nueva que llega por el socket (useAlertNotifications), en cualquier ruta.
  *  Cerrar sesión calla la voz, la cierra en la API y vuelve a /acceso.
  */
 
@@ -25,6 +27,10 @@ export default function PortalLayout() {
   const theme = useAppSelector(state => state.preferences.theme)
   const { t, i18n } = useTranslation()
   usePortalDocument(theme, i18n.resolvedLanguage === 'en' ? 'en' : 'es')
+  const establishmentItems = useAppSelector(state => state.establishments.items)
+  const establishmentIds = useMemo(() => establishmentItems.map(establishment => establishment._id), [establishmentItems])
+  const notificationsOn = useAppSelector(state => state.preferences.notifications.on)
+  useAlertNotifications(establishmentIds, notificationsOn && status === 'signedIn')
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useAppDispatch()

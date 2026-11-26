@@ -8,7 +8,8 @@ import { useTranslation } from 'react-i18next'
 export function WallLoading({ label }: { label?: string }) {
   const { t } = useTranslation()
   return (
-    <div role='status' aria-label={label ?? t('wall.loading')}>
+    // Corrida a la izquierda en estrecho, como la línea de tiempo de verdad (WallTimeline)
+    <div role='status' aria-label={label ?? t('wall.loading')} className='-ml-3 @md/wall:ml-0'>
       {[0, 1, 2].map(slot => (
         <div key={slot} className='grid grid-cols-[24px_minmax(0,1fr)] items-start @md/wall:grid-cols-[72px_32px_minmax(0,1fr)]'>
           <div className='hidden space-y-2 pt-4 @md/wall:block'>

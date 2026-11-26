@@ -6,10 +6,12 @@ import { useBrowserVoices } from '@/libs/useBrowserVoices'
 import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { RATE_RANGE, voiceChanged } from '@/store/slices/preferences.slice'
 import { GROUP_LABEL } from './headerStyles'
+import NotificationsToggle from './NotificationsToggle'
 
 /*  LA VOZ DE LAS ALERTAS: el panel donde se configura (en el header y en el menú del móvil)
  *
- *  Un interruptor para leer en voz alta las alertas nuevas, la lista de voces del navegador para el idioma del
+ *  Arriba, los avisos del sistema para las alertas nuevas (NotificationsToggle). Después, la voz:
+ *  un interruptor para leer en voz alta las alertas nuevas, la lista de voces del navegador para el idioma del
  *  portal (cada una con su botón para escucharla antes de elegirla) y la velocidad. Todo va a las preferencias del
  *  store, que lo recuerdan en este navegador. Si el navegador no puede hablar, lo dice y no enseña nada más.
  *
@@ -59,11 +61,17 @@ export default function VoicePanel({ idPrefix, compact = false }: VoicePanelProp
   }
 
   if (!supported) {
-    return <p className='m-0 rounded-xl bg-portal-ctl p-3 text-sm text-portal-ink'>{t('voice.unsupported')}</p>
+    return (
+      <div className='flex flex-col gap-4'>
+        <NotificationsToggle compact={compact} />
+        <p className='m-0 rounded-xl bg-portal-ctl p-3 text-sm text-portal-ink'>{t('voice.unsupported')}</p>
+      </div>
+    )
   }
 
   return (
     <div className='flex flex-col gap-4'>
+      <NotificationsToggle compact={compact} />
       <button
         type='button'
         aria-pressed={voice.on}

@@ -1,6 +1,6 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 
-/*  LAS PREFERENCIAS DE QUIEN USA EL PORTAL: el tema y la voz
+/*  LAS PREFERENCIAS DE QUIEN USA EL PORTAL: el tema, la voz y los avisos del sistema
  *
  *  Se eligen en el header y se recuerdan en este navegador (PREFERENCES_KEY): el store las guarda cada vez que
  *  cambian (store/index.ts). La primera vez, el tema sigue al sistema (claro u oscuro) y las alertas nuevas se leen
@@ -23,7 +23,11 @@ export type VoicePreferences = {
   rate: number
 }
 
-export type PreferencesState = { theme: Theme; voice: VoicePreferences }
+// NotificationPreferences = «si las alertas nuevas salen como aviso del sistema» (libs/notifications); además hace
+// falta el permiso del navegador, que se pide aparte
+export type NotificationPreferences = { on: boolean }
+
+export type PreferencesState = { theme: Theme; voice: VoicePreferences; notifications: NotificationPreferences }
 
 // PREFERENCES_KEY = «dónde se recuerdan en este navegador»
 export const PREFERENCES_KEY = 'insights365.preferencias'
@@ -59,6 +63,8 @@ function readPreferences(): PreferencesState {
       voiceURI: typeof voice?.voiceURI === 'string' ? voice.voiceURI : null,
       rate: clampRate(voice?.rate),
     },
+    // Encendidos de partida: no salen hasta que el navegador da permiso
+    notifications: { on: typeof stored?.notifications?.on === 'boolean' ? stored.notifications.on : true },
   }
 }
 
@@ -86,7 +92,11 @@ export const preferencesSlice = createSlice({
       if (next.voiceURI !== undefined) state.voice.voiceURI = next.voiceURI
       if (next.rate !== undefined) state.voice.rate = clampRate(next.rate)
     },
+    // notificationsChanged = «encendió o apagó los avisos del sistema»
+    notificationsChanged: (state, action: PayloadAction<boolean>) => {
+      state.notifications.on = action.payload
+    },
   },
 })
 
-export const { themeChanged, voiceChanged } = preferencesSlice.actions
+export const { themeChanged, voiceChanged, notificationsChanged } = preferencesSlice.actions

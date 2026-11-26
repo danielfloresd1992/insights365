@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, NavLink } from 'react-router'
+import { Link, NavLink, useMatch } from 'react-router'
 import { CloseIcon, MenuIcon, SignOutIcon, SpeakerIcon } from '@/components/PortalIcons'
 import { useAppSelector } from '@/store/hooks'
 import { useDismiss } from '../hook/useDismiss'
@@ -15,6 +15,8 @@ import VoicePanel from './VoicePanel'
  *  alertas, quién está dentro y salir.
  *  En el móvil (por debajo de md) quedan la marca, el tema y un botón de menú que despliega lo demás.
  *  Mide 64 px en el móvil y 72 en escritorio: el marco del portal deja ese hueco arriba.
+ *  Su contenido va con el mismo tope de ancho que la página de debajo: 1288 px, salvo en el panel en vivo, que usa
+ *  toda la pantalla (livePanel.controller).
  *
  *  @param userName   el nombre de quien tiene la sesión
  *  @param onSignOut  qué hacer al pulsar «Cerrar sesión»
@@ -61,6 +63,8 @@ export default function PortalHeader({ userName, onSignOut, signingOut }: Portal
   useDismiss(voiceOpen, closeVoice, voiceArea, voiceButton)
   useDismiss(menuOpen, closeMenu, header, menuButton)
 
+  // fullWidth = «estamos en el panel en vivo, que va a todo el ancho»
+  const fullWidth = useMatch('/en-vivo') !== null
   const initials = initialsOf(userName)
   const voiceLabel = voiceOn ? t('voice.buttonOn') : t('voice.buttonOff')
 
@@ -72,7 +76,7 @@ export default function PortalHeader({ userName, onSignOut, signingOut }: Portal
       ref={header}
       className='fixed inset-x-0 top-0 z-40 h-16 border-b border-portal-line bg-portal-bar text-portal-ink backdrop-blur-[14px] backdrop-saturate-[1.4] transition-colors md:h-[72px]'
     >
-      <div className='mx-auto flex h-full w-full max-w-[1288px] items-center gap-1 pl-4 pr-2.5 md:gap-7 md:px-6'>
+      <div className={`mx-auto flex h-full w-full ${fullWidth ? '' : 'max-w-[1288px]'} items-center gap-1 pl-4 pr-2.5 md:gap-7 md:px-6`}>
         <a
           href='#contenido'
           className='sr-only focus:not-sr-only focus:absolute focus:left-6 focus:top-3 focus:z-50 focus:rounded-full focus:bg-portal-ink focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-portal-page'

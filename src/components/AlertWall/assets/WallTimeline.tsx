@@ -144,7 +144,9 @@ export default function WallTimeline({ items, now, placeOf, englishNames, freshI
   const isFresh = (novelty: Novelty) => Boolean(freshIds?.has(novelty._id))
 
   return (
-    <ol aria-label={t('wall.alertsLabel')} className='m-0 list-none p-0'>
+    // En estrecho (el móvil) la línea y sus iconos se corren 12 px a la izquierda y las alertas ganan ese ancho (pedido
+    // del usuario); los iconos siguen sin tocar el borde, porque el panel deja 24 px de margen
+    <ol aria-label={t('wall.alertsLabel')} className='m-0 -ml-3 list-none p-0 @md/wall:ml-0'>
       {days.map(day => (
         <li key={day.key}>
           {/* Un día que aparece con la alerta nueva (el primero de «Hoy») entra con ella */}

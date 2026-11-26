@@ -39,7 +39,7 @@ import WallTimeline from './assets/WallTimeline'
 const READ_AT_ONCE = 3
 
 // ENTER_MS = «lo que dura la entrada de una alerta nueva» (wall-enter en index.css), con un poco de margen
-const ENTER_MS = 1000
+const ENTER_MS = 2000
 
 export default function AlertWall({ className = '' }: { className?: string }) {
   const { t, i18n } = useTranslation()

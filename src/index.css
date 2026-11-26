@@ -50,6 +50,27 @@
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/*  LA MANO EN LO QUE SE PULSA
+ *
+ *  Tailwind 4 deja los botones con la flecha (cursor: default), como el navegador. En el portal todo lo que se pulsa
+ *  lleva la mano (pedido del usuario): botones, pestañas, opciones, enlaces, <summary>, selects, casillas y
+ *  deslizadores. Lo deshabilitado se queda con la flecha: así se nota que no responde.
+ */
+@layer base {
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='tab']:not([aria-disabled='true']),
+  [role='option']:not([aria-disabled='true']),
+  a[href],
+  summary,
+  select:not(:disabled),
+  input[type='checkbox']:not(:disabled),
+  input[type='radio']:not(:disabled),
+  input[type='range']:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 /*  El color de cada familia de alertas (libs/alertFamily): su icono, su anillo y el fondo suave del círculo del muro.
  *  En claro, tonos con contraste sobre blanco; en .dark, más claros para leerse sobre la tinta. */
 :root {
@@ -98,7 +119,9 @@ html.dark body {
 /*  UNA ALERTA NUEVA EN EL MURO (components/AlertWall/assets/WallTimeline)
  *
  *  wall-enter abre su hueco desde cero (las filas de debajo bajan con él) y wall-enter-content la trae desde la
- *  izquierda, un poco después. wall-enter-clip recorta mientras tanto. El muro quita las tres clases al terminar.
+ *  izquierda, un poco después. wall-enter-clip recorta mientras tanto. El muro quita las tres clases al terminar
+ *  (ENTER_MS en AlertWall: si cambia lo que dura, cambia también allí). Va despacio, 1,7 s en total, para que se vea
+ *  que entró una alerta (pedido del usuario).
  *  Con movimiento reducido aparece sin más.
  */
 @keyframes wall-make-room {
@@ -123,7 +146,7 @@ html.dark body {
 
 .wall-enter {
   display: grid;
-  animation: wall-make-room 450ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: wall-make-room 1100ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 .wall-enter-clip {
@@ -132,13 +155,58 @@ html.dark body {
 }
 
 .wall-enter-content {
-  animation: wall-slide-in 560ms 140ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  animation: wall-slide-in 1200ms 500ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .wall-enter,
   .wall-enter-content {
     animation: none;
+  }
+}
+
+/*  LAS MESAS QUE TITILAN (components/TablesViewer: FloorPlanStage y la leyenda del visor)
+ *
+ *  Dos momentos del ciclo de una mesa titilan entre su color y el blanco (en oscuro, el crema de las mesas libres):
+ *  table-blink-green, la ocupada que espera la primera atención, y table-blink-yellow, la desocupada que espera la
+ *  limpieza. Cuando llega lo que falta, la clase se quita y la mesa queda fija. Un ciclo cada 1,2 s, lejos del umbral
+ *  de los destellos peligrosos (3 por segundo). Con movimiento reducido no titilan: quedan de su color con un borde
+ *  blanco por dentro (--blink-inset, más fino en la leyenda), que las sigue distinguiendo de las fijas.
+ */
+@keyframes table-blink {
+  0%, 40%, 100% {
+    background-color: var(--blink-on);
+    color: var(--blink-on-ink);
+  }
+  50%, 90% {
+    background-color: var(--blink-off);
+    color: #3a342a;
+  }
+}
+
+.table-blink {
+  --blink-off: #ffffff;
+  animation: table-blink 1.2s ease-in-out infinite;
+}
+
+.dark .table-blink {
+  --blink-off: #efe7d4;
+}
+
+.table-blink-green {
+  --blink-on: #29c50c;
+  --blink-on-ink: #0d2a06;
+}
+
+.table-blink-yellow {
+  --blink-on: #e9b949;
+  --blink-on-ink: #2b2418;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .table-blink {
+    animation: none;
+    box-shadow: inset 0 0 0 var(--blink-inset, 4px) var(--blink-off), 5px 5px 0 rgb(0 0 0 / 0.3);
   }
 }
 

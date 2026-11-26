@@ -1,0 +1,16 @@
+{
+  "name": "insights365",
+  "short_name": "insights365",
+  "description": "La analítica de todos tus restaurantes: servicio, cocina, novedades y tendencias.",
+  "lang": "es",
+  "start_url": "/en-vivo",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#1c1913",
+  "theme_color": "#1c1913",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
