@@ -1,4 +1,4 @@
-import { useState, type CSSProperties, type ReactNode } from 'react'
+import { useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Novelty } from '@/ajax/novelty.ajax'
 import { CameraIcon, ImagesIcon, PathIcon } from '@/components/PortalIcons'
@@ -7,6 +7,7 @@ import { formatDuration } from '@/libs/formatDuration'
 import { imageUrl } from '@/libs/imageUrl'
 import { videoUrl } from '@/libs/videoUrl'
 import LoopVideo from './LoopVideo'
+import { noteOf } from '../hook/note'
 import { clockOf, fullDateOf, groupByDay, titleOf } from '../hook/timeline'
 import { viewerItems } from '../hook/viewerItems'
 import ImageViewer from './ImageViewer'
@@ -18,6 +19,10 @@ import ImageViewer from './ImageViewer'
  *  la derecha la alerta, con la foto a un lado y el local, la familia, qué pasó y los detalles al otro. (Las nuevas se
  *  leen solas en voz alta: AlertWall.)
  *  En el móvil (por debajo de sm) la hora pasa a la cabecera de la alerta y la foto va arriba.
+ *  Las fotos de las alertas de ayer llevan arriba a la izquierda la marca «Ayer» (pedido del usuario): la hora sola,
+ *  22:39, se lee como de esta noche, y el rótulo del día se queda atrás al bajar por la lista.
+ *  Si el monitoreo dejó una nota (la línea «Nota:» del texto que se mandó al grupo: hook/note), va en una banda a todo
+ *  lo ancho al pie de la alerta (propuesta B del lienzo, elegida por el usuario).
  *  Lo que viene de la API (el título, el plato, el local) queda como llega; lo demás, en el idioma del portal.
  *
  *  @param items       las alertas, de la más nueva a la más vieja
@@ -49,6 +54,68 @@ function Entering({ active, children }: { active: boolean; children: ReactNode }
 
 // ROW = «las columnas de una fila»: hora, raya y alerta; en el móvil solo raya y alerta
 const ROW = 'grid grid-cols-[24px_minmax(0,1fr)] @md/wall:grid-cols-[72px_32px_minmax(0,1fr)]'
+
+// HISTORY_ICON = «un reloj con la flecha hacia atrás», el dibujo de la marca «Ayer»
+const HISTORY_ICON = 'M3 12a9 9 0 1 0 2.64-6.36L3 8.3M3 3.5v4.8h4.8M12 7.5V12l3 2'
+
+// YesterdayMark = «la marca "Ayer" sobre la foto»: ocre macizo con letra oscura, que se lee sobre cualquier foto y en
+// los dos temas; no usa el color de ninguna familia para no confundirse con ellas
+function YesterdayMark({ label }: { label: string }) {
+  return (
+    <span className='pointer-events-none absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-[#e9b949] py-[3px] pl-1.5 pr-2.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#2b2418] shadow-[0_1px_3px_rgb(0_0_0/0.35)]'>
+      <PathIcon d={HISTORY_ICON} size={13} strokeWidth={2.4} />
+      {label}
+    </span>
+  )
+}
+
+// NOTE_ICON = «un globo de texto con renglones», el dibujo de la nota del monitoreo
+const NOTE_ICON = 'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2zM7 8h10M7 12h6'
+
+// NoteBand = «la nota del monitoreo, en la banda del pie de la alerta». La larga se corta en dos líneas con «Ver nota
+// completa»; el botón solo sale si de verdad no cabe (se mide, y se vuelve a medir si cambia el ancho). La banda se
+// separa 1 px de los bordes para no tapar el filo de la tarjeta, que es un ring por dentro.
+function NoteBand({ note }: { note: string }) {
+  const { t } = useTranslation()
+  const id = useId()
+  const text = useRef<HTMLParagraphElement>(null)
+  const [open, setOpen] = useState(false)
+  // cut = «la nota no cabe en las dos líneas»
+  const [cut, setCut] = useState(false)
+
+  useLayoutEffect(() => {
+    const element = text.current
+    if (!element || open) return
+    const measure = () => setCut(element.scrollHeight > element.clientHeight + 1)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [open, note])
+
+  return (
+    <div className='mx-px mb-px flex items-start gap-2.5 rounded-b-[15px] border-t border-portal-line bg-portal-ctl px-4 py-3'>
+      <PathIcon d={NOTE_ICON} size={16} className='mt-0.5 shrink-0 text-portal-muted' />
+      <div className='flex min-w-0 flex-col gap-1'>
+        <p ref={text} id={id} className={`m-0 whitespace-pre-line text-sm leading-normal text-portal-ink ${open ? '' : 'line-clamp-2'}`}>
+          <span className='mr-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-portal-muted'>{t('alert.note')}</span>
+          {note}
+        </p>
+        {(cut || open) && (
+          <button
+            type='button'
+            aria-expanded={open}
+            aria-controls={id}
+            onClick={() => setOpen(value => !value)}
+            className='-mb-3 -mt-2.5 self-start py-3 text-[13px] font-semibold text-portal-ink underline underline-offset-[3px] hover:text-portal-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#29c50c]'
+          >
+            {open ? t('alert.noteLess') : t('alert.noteMore')}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
 
 // familyStyle = «el color de la familia, para lo que pinta con var(--family)»
 const familyStyle = (look: FamilyLook) => ({ '--family': `var(--family-${look.id})` }) as CSSProperties
@@ -95,7 +162,7 @@ export default function WallTimeline({ items, now, placeOf, englishNames, freshI
             {day.items.map(novelty => (
               <li key={novelty._id}>
                 <Entering active={isFresh(novelty)}>
-                  <TimelineAlert novelty={novelty} locale={locale} place={placeOf(novelty)} englishNames={englishNames} />
+                  <TimelineAlert novelty={novelty} locale={locale} place={placeOf(novelty)} englishNames={englishNames} fromYesterday={day.when === 'yesterday'} />
                 </Entering>
               </li>
             ))}
@@ -111,9 +178,11 @@ type TimelineAlertProps = {
   locale: 'es' | 'en'
   place: string
   englishNames?: ReadonlyMap<string, string> | null
+  // fromYesterday = «la alerta es de ayer»: su foto lleva la marca y el visor lo dice junto a la hora
+  fromYesterday?: boolean
 }
 
-function TimelineAlert({ novelty, locale, place, englishNames }: TimelineAlertProps) {
+function TimelineAlert({ novelty, locale, place, englishNames, fromYesterday = false }: TimelineAlertProps) {
   const { t } = useTranslation()
   const family = alertFamily(novelty.alert?.category)
   // familyLabel = «el nombre de la familia»; las que no tienen familia solo llevan la campana, sin rótulo
@@ -127,6 +196,8 @@ function TimelineAlert({ novelty, locale, place, englishNames }: TimelineAlertPr
     duration ? t('alert.lasted', { duration }) : null,
   ].filter((detail): detail is string => Boolean(detail))
   const clock = clockOf(novelty.date, locale)
+  const yesterday = fromYesterday ? t('wall.yesterday') : null
+  const note = noteOf(novelty)
   const fullDate = fullDateOf(novelty.date, locale)
   const photo = imageUrl(novelty.imageToShare || novelty.images[0]?.url)
   const video = videoUrl(novelty.videoUrl)
@@ -150,64 +221,69 @@ function TimelineAlert({ novelty, locale, place, englishNames }: TimelineAlertPr
         {shift && <span className='text-xs text-portal-muted'>{shift}</span>}
       </p>
       <Rail look={family} />
-      <article className='mb-4 ml-1 flex flex-col overflow-hidden rounded-2xl bg-portal-surface ring-1 ring-inset ring-portal-line @md/wall:ml-0 @md/wall:flex-row'>
-        {/* Con vídeo, el vídeo en bucle en el sitio de la foto; si no, la foto. Pulsarlo abre el visor */}
-        {media && gallery.length > 0 ? (
-          <button
-            type='button'
-            onClick={() => setViewerOpen(true)}
-            aria-label={t('viewer.open', { title })}
-            className={`group relative block cursor-zoom-in overflow-hidden focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-[#29c50c] ${MEDIA}`}
-          >
-            {media}
-            {gallery.length > 1 && (
-              <span className='pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[11px] font-semibold text-white'>
-                <ImagesIcon size={13} />
-                {t('viewer.count', { count: gallery.length })}
-              </span>
-            )}
-          </button>
-        ) : (
-          <div aria-hidden='true' className={`grid place-items-center text-portal-muted ${MEDIA}`}>
-            <CameraIcon size={26} />
-          </div>
-        )}
-        {viewerOpen && (
-          <ImageViewer
-            items={gallery}
-            heading={title}
-            subheading={[place, clock].filter(Boolean).join(' · ')}
-            onClose={() => setViewerOpen(false)}
-          />
-        )}
-        <div className='flex min-w-0 flex-1 flex-col gap-2 p-4 @md/wall:px-5 @md/wall:py-[18px]'>
-          <div className='flex items-center gap-4'>
-            <p className='m-0 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1'>
-              <time dateTime={novelty.date ?? undefined} title={fullDate} className='text-[15px] font-semibold tabular-nums @md/wall:hidden'>
-                {clock}
-              </time>
-              <span className='text-base font-bold tracking-[-0.01em] text-portal-ink'>{place}</span>
-              {familyLabel && (
-                <span style={familyStyle(family)} className='inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-portal-muted'>
-                  <PathIcon d={family.icon} size={14} strokeWidth={2.2} className='shrink-0 text-[var(--family)]' />
-                  {familyLabel}
+      <article className='mb-4 ml-1 flex flex-col overflow-hidden rounded-2xl bg-portal-surface ring-1 ring-inset ring-portal-line @md/wall:ml-0'>
+        <div className='flex flex-col @md/wall:flex-row'>
+          {/* Con vídeo, el vídeo en bucle en el sitio de la foto; si no, la foto. Pulsarlo abre el visor */}
+          {media && gallery.length > 0 ? (
+            <button
+              type='button'
+              onClick={() => setViewerOpen(true)}
+              aria-label={[t('viewer.open', { title }), yesterday].filter(Boolean).join(', ')}
+              className={`group relative block cursor-zoom-in overflow-hidden focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-[#29c50c] ${MEDIA}`}
+            >
+              {media}
+              {yesterday && <YesterdayMark label={yesterday} />}
+              {gallery.length > 1 && (
+                <span className='pointer-events-none absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/65 px-2 py-0.5 text-[11px] font-semibold text-white'>
+                  <ImagesIcon size={13} />
+                  {t('viewer.count', { count: gallery.length })}
                 </span>
               )}
-            </p>
-          </div>
-          <p className='m-0 text-[17px] font-semibold leading-snug text-portal-ink'>{title}</p>
-          {(details.length > 0 || shift) && (
-            <ul aria-label={t('alert.details')} className='m-0 mt-1 flex list-none flex-wrap gap-1.5 p-0'>
-              {details.map(detail => (
-                <li key={detail} className='rounded-full bg-portal-ctl px-2.5 py-1 text-xs font-medium text-portal-ink ring-1 ring-portal-line'>
-                  {detail}
-                </li>
-              ))}
-              {/* En el móvil no hay columna de la hora: el turno va aquí */}
-              {shift && <li className='rounded-full bg-portal-ctl px-2.5 py-1 text-xs font-medium text-portal-ink ring-1 ring-portal-line @md/wall:hidden'>{shift}</li>}
-            </ul>
+            </button>
+          ) : (
+            <div aria-hidden='true' className={`relative grid place-items-center text-portal-muted ${MEDIA}`}>
+              <CameraIcon size={26} />
+              {yesterday && <YesterdayMark label={yesterday} />}
+            </div>
           )}
+          {viewerOpen && (
+            <ImageViewer
+              items={gallery}
+              heading={title}
+              subheading={[place, [yesterday, clock].filter(Boolean).join(' ')].filter(Boolean).join(' · ')}
+              onClose={() => setViewerOpen(false)}
+            />
+          )}
+          <div className='flex min-w-0 flex-1 flex-col gap-2 p-4 @md/wall:px-5 @md/wall:py-[18px]'>
+            <div className='flex items-center gap-4'>
+              <p className='m-0 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1'>
+                <time dateTime={novelty.date ?? undefined} title={fullDate} className='text-[15px] font-semibold tabular-nums @md/wall:hidden'>
+                  {clock}
+                </time>
+                <span className='text-base font-bold tracking-[-0.01em] text-portal-ink'>{place}</span>
+                {familyLabel && (
+                  <span style={familyStyle(family)} className='inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-portal-muted'>
+                    <PathIcon d={family.icon} size={14} strokeWidth={2.2} className='shrink-0 text-[var(--family)]' />
+                    {familyLabel}
+                  </span>
+                )}
+              </p>
+            </div>
+            <p className='m-0 text-[17px] font-semibold leading-snug text-portal-ink'>{title}</p>
+            {(details.length > 0 || shift) && (
+              <ul aria-label={t('alert.details')} className='m-0 mt-1 flex list-none flex-wrap gap-1.5 p-0'>
+                {details.map(detail => (
+                  <li key={detail} className='rounded-full bg-portal-ctl px-2.5 py-1 text-xs font-medium text-portal-ink ring-1 ring-portal-line'>
+                    {detail}
+                  </li>
+                ))}
+                {/* En el móvil no hay columna de la hora: el turno va aquí */}
+                {shift && <li className='rounded-full bg-portal-ctl px-2.5 py-1 text-xs font-medium text-portal-ink ring-1 ring-portal-line @md/wall:hidden'>{shift}</li>}
+              </ul>
+            )}
+          </div>
         </div>
+        {note && <NoteBand note={note} />}
       </article>
     </div>
   )

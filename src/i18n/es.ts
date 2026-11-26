@@ -316,6 +316,9 @@ export const es = {
     dayShift: 'Turno diurno',
     nightShift: 'Turno nocturno',
     details: 'Detalles',
+    note: 'Nota del monitoreo',
+    noteMore: 'Ver nota completa',
+    noteLess: 'Ver menos',
   },
   soon: {
     badge: 'Próximamente',

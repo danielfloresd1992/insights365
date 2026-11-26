@@ -313,6 +313,9 @@ export const en: Messages = {
     dayShift: 'Day shift',
     nightShift: 'Night shift',
     details: 'Details',
+    note: 'Monitoring note',
+    noteMore: 'Read the full note',
+    noteLess: 'Show less',
   },
   soon: {
     badge: 'Coming soon',

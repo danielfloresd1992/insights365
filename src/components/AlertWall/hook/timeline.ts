@@ -9,8 +9,10 @@ import type { Novelty } from '@/ajax/novelty.ajax'
 
 type TimelineLocale = 'es' | 'en'
 
-// TimelineDay = «un día del muro, con sus alertas en el orden en que llegaron»
-export type TimelineDay = { key: string; label: string; items: Novelty[] }
+// TimelineDay = «un día del muro, con sus alertas en el orden en que llegaron»; `when` dice si es hoy, ayer o antes
+// (las fotos de las alertas de ayer llevan la marca «Ayer»: WallTimeline)
+export type TimelineWhen = 'today' | 'yesterday' | 'earlier'
+export type TimelineDay = { key: string; label: string; when: TimelineWhen; items: Novelty[] }
 
 // dayKey = «el día de una fecha, en la hora local»
 const dayKey = (date: Date) => `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate()}`
@@ -41,11 +43,17 @@ export function groupByDay(items: Novelty[], now: number, locale: TimelineLocale
     return capitalize((date.getFullYear() === today.getFullYear() ? withWeekday : withYear).format(date))
   }
 
+  const whenOf = (date: Date | null): TimelineWhen => {
+    if (!date) return 'earlier'
+    const key = dayKey(date)
+    return key === dayKey(today) ? 'today' : key === dayKey(yesterday) ? 'yesterday' : 'earlier'
+  }
+
   const days = new Map<string, TimelineDay>()
   for (const item of items) {
     const date = validDate(item.date)
     const key = date ? dayKey(date) : 'sin-fecha'
-    const day = days.get(key) ?? { key, label: labelOf(date), items: [] }
+    const day = days.get(key) ?? { key, label: labelOf(date), when: whenOf(date), items: [] }
     day.items.push(item)
     days.set(key, day)
   }
