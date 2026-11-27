@@ -2,13 +2,14 @@ import { http } from '@/libs/http'
 
 /*  EL CROQUIS DE MESAS Y LAS ROTACIONES, CONTRA LA API (api_jarvis365)
  *
- *  - El croquis de un local (colección floorplans): GET /local/id=:id/floor-plan → { data: croquis | null }. null es
- *    «este local no tiene croquis». Lo dibuja Client365; aquí solo se lee.
+ *  - Los croquis (colección floorplans), que dibuja Client365; aquí solo se leen:
+ *      GET /local/floor-plans → { data: [croquis…] }  todos los de los locales que puede ver quien entra, de una vez
+ *                               (la API filtra por su acceso); un local que no sale no tiene croquis
  *  - Las rotaciones de un local (colección rotations), que anota el operador en Mesas de Jarvis-express365:
  *      GET /rotation?establishment=:id&status=open                → las ABIERTAS (en vivo), de cualquier día
  *      GET /rotation?establishment=:id&from=AAAA-MM-DD&to=AAAA-MM-DD → las GUARDADAS de esos días operativos
- *    Las dos responden { …, documents }.
- *  Las dos piden sesión. OJO: la ruta del croquis es nueva en la API; hasta que se despliegue, contesta 404.
+ *    Las dos responden { …, documents }; la de un local que no puede ver, 403.
+ *  Todo pide sesión.
  */
 
 // FloorPlanZone = «una zona del croquis» y FloorPlanPiece = «una pieza»: una mesa, un puesto de barra o un mueble.
@@ -49,10 +50,10 @@ export type Rotation = {
 
 type RotationList = { documents?: Rotation[] }
 
-/** El croquis de un local, o null si no tiene. */
-export async function getFloorPlan(establishmentId: string): Promise<FloorPlan | null> {
-  const response = await http.get<{ data: FloorPlan | null }>(`/local/id=${establishmentId}/floor-plan`)
-  return response.data?.data ?? null
+/** Todos los croquis de los locales que puede ver quien entra, en una sola petición. */
+export async function getFloorPlans(): Promise<FloorPlan[]> {
+  const response = await http.get<{ data?: FloorPlan[] }>('/local/floor-plans')
+  return Array.isArray(response.data?.data) ? response.data.data : []
 }
 
 /** Las rotaciones abiertas de un local (las que siguen en Mesas: en vivo). */

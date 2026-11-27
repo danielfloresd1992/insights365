@@ -61,7 +61,10 @@ function Stat({ icon, label, short, value, note, live = false }: { icon: string;
 
 export default function TablesViewer({ className = '', autoLayout = false }: { className?: string; autoLayout?: boolean }) {
   const { t } = useTranslation()
-  const items = useAppSelector(state => state.establishments.items)
+  const establishments = useAppSelector(state => state.establishments)
+  const items = establishments.items
+  // available = «ya llegaron los locales de quien entra» (los que le asignaron; si se están volviendo a pedir, valen los de antes)
+  const available = establishments.userId !== null
   const ids = useMemo(() => items.map(item => item._id), [items])
   const floor = useFloorPlans(ids)
 
@@ -164,20 +167,34 @@ export default function TablesViewer({ className = '', autoLayout = false }: { c
       {/* En el móvil sobra: la pestaña de abajo ya dice dónde se está */}
       <header className='hidden items-center justify-between gap-3 lg:flex'>
         <h2 className='m-0 text-lg font-semibold text-portal-ink'>{t('tables.title')}</h2>
-        {floor.status === 'ready' && (
+        {available && items.length > 0 && floor.status === 'ready' && (
           <p className='m-0 text-[13px] text-portal-muted'>
             <strong className='font-semibold text-portal-ink'>{t('tables.withPlan', { n: withPlan.length, total: items.length })}</strong>
           </p>
         )}
       </header>
 
-      {floor.status === 'loading' && <div role='status' className='min-h-0 flex-1 animate-pulse rounded-xl bg-portal-ctl'><span className='sr-only'>{t('tables.loading')}</span></div>}
+      {((!available && establishments.status !== 'failed') || (available && floor.status === 'loading')) && (
+        <div role='status' className='min-h-0 flex-1 animate-pulse rounded-xl bg-portal-ctl'><span className='sr-only'>{t('tables.loading')}</span></div>
+      )}
 
-      {floor.status === 'failed' && (
+      {!available && establishments.status === 'failed' && (
+        <p role='alert' className='m-0 rounded-xl bg-portal-danger-bg px-4 py-3 text-sm text-portal-danger'>{establishments.error ?? t('wall.establishmentsFailed')}</p>
+      )}
+
+      {available && floor.status === 'failed' && (
         <p role='alert' className='m-0 rounded-xl bg-portal-danger-bg px-4 py-3 text-sm text-portal-danger'>{t('tables.failed')}</p>
       )}
 
-      {floor.status === 'ready' && current && (
+      {/* Sin locales asignados: ni croquis ni cifras de nadie */}
+      {available && items.length === 0 && (
+        <div className='grid min-h-[220px] flex-1 place-content-center gap-1.5 rounded-xl bg-portal-ctl px-6 py-10 text-center'>
+          <p className='m-0 font-semibold text-portal-ink'>{t('tables.noEstablishmentsTitle')}</p>
+          <p className='m-0 text-sm text-portal-muted'>{t('tables.noEstablishmentsText')}</p>
+        </div>
+      )}
+
+      {available && floor.status === 'ready' && current && (
         <>
           <div className='flex gap-2'>
           {canStep && (

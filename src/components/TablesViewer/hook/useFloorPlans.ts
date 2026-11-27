@@ -1,46 +1,53 @@
-import { useEffect, useState } from 'react'
-import { getFloorPlan, type FloorPlan } from '@/ajax/tables.ajax'
+import { useEffect, useMemo, useState } from 'react'
+import { getFloorPlans, type FloorPlan } from '@/ajax/tables.ajax'
 
 /*  LOS CROQUIS DE LOS LOCALES DE QUIEN ENTRA
  *
- *  Uno por local (GET /local/id=:id/floor-plan), todos a la vez. Guardados en memoria mientras dure la página: el
- *  croquis cambia poco y el visor los pide cada vez que se monta.
- *  plans[id] = el croquis, null si el local no tiene, o undefined si su petición falló.
- *  status: 'failed' solo si fallaron TODAS (la ruta no existe en la API desplegada, sin conexión…).
+ *  Todos en una sola petición (GET /local/floor-plans), que la API ya filtra por el acceso de quien entra: no llega el
+ *  croquis de un local que no puede ver. Antes era una petición por local, y con los 122 locales del equipo eran 122.
+ *  Se guardan en memoria mientras dure la página (el croquis cambia poco y el visor los pide cada vez que se monta), y
+ *  se vuelven a pedir si cambian los locales de quien entra (un administrador le asignó otros).
+ *
+ *  plans[id] = el croquis, o null si el local no tiene. Solo los de `ids`: lo que no sea de los locales de quien entra
+ *  no se enseña aunque llegara.
  */
 
-type PlansState = { status: 'loading' | 'ready' | 'failed'; plans: Record<string, FloorPlan | null | undefined> }
+type PlansState = { status: 'loading' | 'ready' | 'failed'; plans: Record<string, FloorPlan | null> }
 
-// cache = «los croquis ya pedidos», por id de local
-const cache = new Map<string, FloorPlan | null>()
+// Fetched = «lo que contestó la API para esa lista de locales»: byId null es que falló
+type Fetched = { key: string; byId: Map<string, FloorPlan> | null }
 
-const fetchPlan = async (id: string) => {
-  if (cache.has(id)) return cache.get(id) ?? null
-  const plan = await getFloorPlan(id)
-  cache.set(id, plan)
-  return plan
-}
+// cache = «los croquis traídos y para qué locales se pidieron»: con la misma lista no se vuelven a pedir
+let cache: { key: string; byId: Map<string, FloorPlan> } | null = null
 
 export function useFloorPlans(ids: string[]): PlansState {
-  const key = ids.join(',')
-  const [state, setState] = useState<PlansState>({ status: 'loading', plans: {} })
+  const key = useMemo(() => [...ids].sort().join(','), [ids])
+  const [fetched, setFetched] = useState<Fetched | null>(null)
 
   useEffect(() => {
+    if (!key || cache?.key === key) return
     let alive = true
-    const list = key ? key.split(',') : []
-    void Promise.allSettled(list.map(fetchPlan)).then(results => {
-      if (!alive) return
-      const plans: PlansState['plans'] = {}
-      results.forEach((result, index) => {
-        plans[list[index]] = result.status === 'fulfilled' ? result.value : undefined
+    getFloorPlans()
+      .then(plans => {
+        const byId = new Map(plans.filter(plan => plan?.establishment).map(plan => [String(plan.establishment), plan]))
+        cache = { key, byId }
+        if (alive) setFetched({ key, byId })
       })
-      const allFailed = list.length > 0 && results.every(result => result.status === 'rejected')
-      setState({ status: allFailed ? 'failed' : 'ready', plans })
-    })
+      .catch(() => {
+        if (alive) setFetched({ key, byId: null })
+      })
     return () => {
       alive = false
     }
   }, [key])
 
-  return state
+  // El estado sale de lo que hay para esta lista: la caché, o lo que contestó la API; si no, todavía llega
+  const byId = cache?.key === key ? cache.byId : fetched?.key === key ? fetched.byId : undefined
+  return useMemo<PlansState>(() => {
+    const list = key ? key.split(',') : []
+    if (list.length === 0) return { status: 'ready', plans: {} }
+    if (byId === undefined) return { status: 'loading', plans: {} }
+    if (byId === null) return { status: 'failed', plans: {} }
+    return { status: 'ready', plans: Object.fromEntries(list.map(id => [id, byId.get(id) ?? null])) }
+  }, [key, byId])
 }

@@ -105,12 +105,13 @@ export default function WeeklyReportController() {
       </header>
 
       <div id='reporte-panel' role='tabpanel' aria-labelledby={`vista-${view}`}>
-        {establishments.status === 'failed' ? (
+        {/* Solo se espera a la primera carga: si se vuelven a pedir por detrás, el reporte sigue a la vista */}
+        {establishments.userId === null && establishments.status === 'failed' ? (
           <Notice tone='error'>
             {establishments.error ?? t('reports.error.unknown')}{' '}
             <button type='button' className='font-semibold underline' onClick={() => void dispatch(loadEstablishments({ force: true }))}>{t('reports.retry')}</button>
           </Notice>
-        ) : establishments.status !== 'ready' ? (
+        ) : establishments.userId === null ? (
           <div role='status' className='h-40 animate-pulse rounded-2xl bg-portal-ctl ring-1 ring-inset ring-portal-line'><span className='sr-only'>{t('reports.loadingEstablishments')}</span></div>
         ) : !selected ? (
           <Notice>{t('reports.noEstablishments')}</Notice>

@@ -7,6 +7,7 @@ import { useAppDispatch, useAppSelector } from '@/store/hooks'
 import { signedOut } from '@/store/slices/session.slice'
 import PortalHeader from './assets/PortalHeader'
 import { useAlertNotifications } from './hook/useAlertNotifications'
+import { useEstablishmentsRefresh } from './hook/useEstablishmentsRefresh'
 import { usePortalDocument } from './hook/usePortalDocument'
 import { useSessionCheck } from './hook/useSessionCheck'
 
@@ -31,6 +32,8 @@ export default function PortalLayout() {
   const establishmentIds = useMemo(() => establishmentItems.map(establishment => establishment._id), [establishmentItems])
   const notificationsOn = useAppSelector(state => state.preferences.notifications.on)
   useAlertNotifications(establishmentIds, notificationsOn && status === 'signedIn')
+  // Lo que un administrador asigne o quite vale sin recargar
+  useEstablishmentsRefresh(status === 'signedIn')
   const location = useLocation()
   const navigate = useNavigate()
   const dispatch = useAppDispatch()

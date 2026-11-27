@@ -132,7 +132,12 @@ export default function AlertWall({ className = '' }: { className?: string }) {
         </div>
         {available && all.length > 0 && (
           <p className='m-0 text-sm text-portal-muted'>
-            {franchises.length > 0 && <span className='font-semibold text-portal-ink'>{franchises.join(', ')} · </span>}
+            {/* Una cuenta del equipo ve todos los locales: se dice eso en vez de la lista de las ~25 franquicias */}
+            {establishments.scope === 'staff' ? (
+              <span className='font-semibold text-portal-ink'>{t('wall.staffScope')} · </span>
+            ) : (
+              franchises.length > 0 && <span className='font-semibold text-portal-ink'>{franchises.join(', ')} · </span>
+            )}
             {t('wall.establishments', { count: all.length })}
           </p>
         )}

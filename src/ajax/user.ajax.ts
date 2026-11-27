@@ -16,6 +16,18 @@ import { http } from '@/libs/http'
 // LA SESIÓN
 // ═════════════════════════════════════════════════════════════════════════════════════════════════════════════════
 
+// ApiSessionAccess = «qué locales ve el usuario, ya relacionados con él» (user.access en la API, con los nombres de sus
+// franquicias y sus locales). Llega en /auth/login y en /auth/isAuth, y la API lo lee de la base en cada /auth/isAuth:
+// un cambio que haga un administrador en Client365 llega sin volver a entrar.
+//   scope: 'assigned' sus franquicias y locales · 'staff' del equipo, todos · 'none' todavía nada asignado
+export type ApiSessionAccess = {
+  mode: 'all' | 'only'
+  scope: 'assigned' | 'staff' | 'none'
+  franchises: { _id: string; name: string | null }[]
+  locals: { _id: string; name: string | null; franchise: string | null; franchiseName: string | null }[]
+  updatedAt: string | null
+}
+
 // ApiUser = «el usuario tal como lo devuelve la API»; solo se nombra lo que el portal usa
 export type ApiUser = {
   _id: string
@@ -24,9 +36,8 @@ export type ApiUser = {
   email?: string
   admin?: boolean
   super?: boolean
-  // franchises = «las franquicias del dueño». HOY LA API NO LO TIENE: sus usuarios no están ligados a franquicias.
-  // Cuando lo tenga, el estado global de establecimientos usará estas (ver store/slices/establishments.slice)
-  franchises?: unknown
+  // access = null si la API no lo pudo leer (o es una API de antes): entonces decide GET /insights/establishments
+  access?: ApiSessionAccess | null
 }
 
 // ALREADY_SIGNED_IN = «lo que contesta /auth/login cuando ya había sesión: un aviso, sin el usuario»

@@ -2,18 +2,21 @@ import { http } from '@/libs/http'
 
 /*  LOS ESTABLECIMIENTOS CONTRA LA API (api_jarvis365, colección `locals`)
  *
- *  Una sola llamada trae todos los locales con lo que cuelga de ellos ya poblado: GET /localLigth, con `all=true` para
- *  que vengan también los inactivos y `populate` con las cuatro referencias del local que existen de verdad:
+ *  Una sola llamada trae los locales QUE PUEDE VER QUIEN ENTRA, con lo que cuelga de ellos ya poblado:
+ *  GET /insights/establishments. La API mira la sesión de la cookie y el acceso de ese usuario (user.access):
+ *  - con locales asignados ('only'): los de sus franquicias enteras y sus locales sueltos; si se le quitó todo, ninguno
+ *  - sin nada asignado: ninguno, salvo que sea del equipo de Jarvis365 (admin o super), que ve todos para soporte
+ *  `scope` dice cuál de los tres casos es (InsightsScope).
+ *  Los accesos los asigna un administrador en Client365 (/clients&manasgement, pestaña Accesos de cada local), y valen
+ *  en la petición siguiente. El filtro es de la API, no de aquí: lo que no puede ver ni siquiera llega.
+ *
+ *  Vienen pobladas las cuatro referencias del local que existen de verdad:
  *  - franchiseReference.franchise → la franquicia (Franchise)
  *  - config_report → la configuración del informe (DocumentConfig): turnos, cuadro general, umbrales, semanales
  *  - timeServices → los umbrales de primera atención y de limpieza (TimeServices)
  *  - dishes → los platos, con su tiempo límite por turno (Dishes)
- *  No se pueblan timeDelays ni shedules: apuntan a modelos que la API no registra. Y /localLigth quita siempre
- *  managers, img y touchs, así que los gerentes no llegan aunque se pidan.
- *
- *  Esa llamada no filtra por franquicia, y la que sí filtra (/franchise/establishments=) solo da nombre, id y estado,
- *  sin poblar nada. Así que se piden todos y se filtra aquí: en la copia local de la base son 118 locales y unos
- *  320 KB, de los que La Francisca son 9 y 36 KB. Pide sesión: sin ella la API contesta 401.
+ *  No llegan managers, img ni touchs. Pide sesión: sin ella la API contesta 401. Un 404 es que la API todavía no
+ *  tiene la ruta (falta desplegarla).
  */
 
 // ApiFranchise = «la franquicia de un local, ya poblada»
@@ -57,7 +60,7 @@ export type ReportConfig = {
 // TypeMonitoring = «qué se vigila en el local»
 export type TypeMonitoring = 'analytical' | 'analytical and perimeter' | 'perimeter'
 
-// ApiEstablishment = «el local tal como llega de /localLigth»: una referencia sin poblar llega como id, o no llega
+// ApiEstablishment = «el local tal como llega de la API»: una referencia sin poblar llega como id, o no llega
 type ApiEstablishment = {
   _id: string
   name: string
@@ -92,11 +95,8 @@ export type FullEstablishment = {
   dishes: Dish[]
 }
 
-// LA_FRANCISCA = «la franquicia de los Francisca, con el nombre exacto que tiene en la API»
-export const LA_FRANCISCA = 'La Francisca'
-
-// POPULATE = «las referencias del local que se traen pobladas, separadas por espacio como las lee Mongoose»
-const POPULATE = ['franchiseReference.franchise', 'config_report', 'timeServices', 'dishes'].join(' ')
+// InsightsAccess = «qué ve quien entra, según la API»: todo, o solo esas franquicias y esos locales sueltos (ids)
+export type InsightsAccess = { mode: 'all' | 'only'; franchises: string[]; locals: string[] }
 
 // populated = «la referencia si llegó poblada; si llegó como id suelto, o no llegó, null»
 const populated = <T extends object>(value: T | string | null | undefined): T | null => (value && typeof value === 'object' ? value : null)
@@ -123,23 +123,33 @@ function toFullEstablishment(raw: ApiEstablishment): FullEstablishment {
   }
 }
 
-// belongsTo = «si el local es de alguna de esas franquicias, dichas por su nombre o por su id»
-const belongsTo = (establishment: FullEstablishment, franchises: string[]) =>
-  franchises.some(franchise => franchise === establishment.franchiseId || franchise === establishment.franchiseName)
+// InsightsScope = «por qué ve lo que ve», según la API (insightsScope en api_jarvis365):
+//   'assigned'  tiene locales asignados: solo esos
+//   'staff'     es del equipo de Jarvis365 (administrador) sin restricción: todos, para soporte
+//   'none'      todavía nadie le asignó locales: ninguno
+export type InsightsScope = 'assigned' | 'staff' | 'none'
 
-// getAllEstablishments = «todos los locales, activos e inactivos, con sus referencias pobladas: una sola llamada»
-export async function getAllEstablishments(): Promise<FullEstablishment[]> {
-  const response = await http.get<ApiEstablishment[]>('/localLigth', { params: { all: true, populate: POPULATE } })
-  return Array.isArray(response.data) ? response.data.map(toFullEstablishment) : []
+// MyEstablishments = «los locales de quien entra, por orden de nombre, y con qué acceso los eligió la API»
+export type MyEstablishments = { access: InsightsAccess; scope: InsightsScope; items: FullEstablishment[] }
+
+const SCOPES: InsightsScope[] = ['assigned', 'staff', 'none']
+
+// toAccess = «el acceso como llega, con lo que falte resuelto»: sin él, la API no restringió nada
+function toAccess(raw: Partial<InsightsAccess> | null | undefined): InsightsAccess {
+  if (raw?.mode !== 'only') return { mode: 'all', franchises: [], locals: [] }
+  return { mode: 'only', franchises: raw.franchises ?? [], locals: raw.locals ?? [] }
 }
 
-// getFranchisesEstablishments = «los locales de esas franquicias (por nombre o por id), por orden de nombre, en una sola llamada»
-export async function getFranchisesEstablishments(franchises: string[]): Promise<FullEstablishment[]> {
-  const all = await getAllEstablishments()
-  return all.filter(establishment => belongsTo(establishment, franchises)).sort((first, second) => first.name.localeCompare(second.name, 'es'))
-}
-
-// getFranciscaEstablishments = «todos los Francisca con todo lo poblado, en una sola llamada»
-export function getFranciscaEstablishments(): Promise<FullEstablishment[]> {
-  return getFranchisesEstablishments([LA_FRANCISCA])
+// getMyEstablishments = «los locales que puede ver quien entra, con todo lo poblado: una sola llamada»
+export async function getMyEstablishments(): Promise<MyEstablishments> {
+  const response = await http.get<{ access?: Partial<InsightsAccess>; scope?: InsightsScope; establishments?: ApiEstablishment[] }>('/insights/establishments')
+  const establishments = Array.isArray(response.data?.establishments) ? response.data.establishments : []
+  const access = toAccess(response.data?.access)
+  const raw = response.data?.scope
+  return {
+    access,
+    // Sin scope (una API de antes): se deduce del acceso
+    scope: raw && SCOPES.includes(raw) ? raw : access.mode === 'only' ? 'assigned' : 'staff',
+    items: establishments.map(toFullEstablishment).sort((first, second) => first.name.localeCompare(second.name, 'es')),
+  }
 }
