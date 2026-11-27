@@ -93,6 +93,29 @@
   --family-otra: #b3aa96;
 }
 
+/*  EL MODO CLARO DEL PORTAL: MARFIL (propuesta A del lienzo «Modo claro con menos blanco», elegida por el usuario)
+ *
+ *  Dentro del portal el claro deja de ser todo blanco: la página va en marfil cálido, las tarjetas casi blancas encima
+ *  y los bordes y controles en arena, para que cada bloque se despegue del fondo. Solo cambian colores.
+ *  Va en .portal, que usePortalDocument pone en <html> mientras el portal está abierto: la portada y /acceso siguen
+ *  con los de @theme. Antes que .dark, que lo pisa en oscuro (misma especificidad: gana el que va después).
+ */
+.portal {
+  --color-portal-page: #f4eee1;
+  --color-portal-surface: #fffdf7;
+  --color-portal-bar: rgb(248 243 232 / 0.88);
+  --color-portal-line: #e5dac4;
+  --color-portal-ctl: #f6f0e2;
+  --color-portal-ring: #d5c7a9;
+  --color-portal-on: #fffdf7;
+  --color-portal-soft: #efe8da;
+  --color-portal-avatar: #efe4cb;
+}
+
+html.portal body {
+  background: var(--color-portal-page);
+}
+
 .dark {
   --color-portal-page: #1c1913;
   --color-portal-surface: #25211a;
@@ -201,6 +224,30 @@ html.dark body {
 .table-blink-yellow {
   --blink-on: #e9b949;
   --blink-on-ink: #2b2418;
+}
+
+/*  EL GERENTE EN PÍXELES DEL CROQUIS, QUIETO (components/TablesViewer/assets/ManagerWalker)
+ *
+ *  Respira como un muñeco de 8 bits: sube un píxel y vuelve, a saltos (steps), sin deslizarse. Con movimiento
+ *  reducido se queda quieto.
+ */
+@keyframes manager-idle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5%);
+  }
+}
+
+.manager-idle {
+  animation: manager-idle 1.2s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .manager-idle {
+    animation: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

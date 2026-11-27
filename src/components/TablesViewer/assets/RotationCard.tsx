@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PathIcon } from '@/components/PortalIcons'
 import { minutesBetween, shortHour, type TableCycle, type TableDay, type TablePhase } from '../hook/tableActivity'
-import { BROOM_ICON } from './icons'
+import { BROOM_ICON, SERVED_ICON } from './icons'
 
 /*  LA TARJETA DE UNA MESA: el ciclo completo de su rotación. Solo pinta.
  *
@@ -71,6 +71,7 @@ export default function RotationCard({ label, zone, phase, cycle, day }: Rotatio
         </p>
         <span className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold ${CHIP[phase]}`}>
           {phase === 'limpieza' && <PathIcon d={BROOM_ICON} size={12} strokeWidth={2.2} />}
+          {phase === 'servida' && <PathIcon d={SERVED_ICON} size={12} strokeWidth={2.2} />}
           {t(`tables.phase.${phase}`)}
         </span>
       </div>

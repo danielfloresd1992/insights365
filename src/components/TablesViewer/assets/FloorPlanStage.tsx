@@ -2,8 +2,9 @@ import { useCallback, useLayoutEffect, useMemo, useRef, useState, type CSSProper
 import { useTranslation } from 'react-i18next'
 import type { FloorPlan } from '@/ajax/tables.ajax'
 import { PathIcon } from '@/components/PortalIcons'
-import { EMPTY_DAY, isTable, phaseOf, tableKey, type TableCycle, type TableDay, type TablePhase } from '../hook/tableActivity'
-import { BROOM_ICON } from './icons'
+import { EMPTY_DAY, isTable, phaseOf, tableKey, type LastTouch, type TableCycle, type TableDay, type TablePhase } from '../hook/tableActivity'
+import { BROOM_ICON, SERVED_ICON } from './icons'
+import ManagerWalker, { type ManagerSpot } from './ManagerWalker'
 import RotationCard from './RotationCard'
 
 /*  EL CROQUIS, VISTO DESDE ARRIBA. Solo pinta.
@@ -21,6 +22,9 @@ import RotationCard from './RotationCard'
  *  Al pasar el ratón por una mesa (o al enfocarla con el teclado) sale su tarjeta con el ciclo de la rotación
  *  (RotationCard), al lado de la mesa; al pulsarla, la tarjeta se queda hasta pulsarla otra vez.
  *  Las barras y los muebles se dibujan, pero no se pueden pulsar ni llevan cifras; los grandes, con su nombre.
+ *  Al lado de la mesa del último toque de gerente del día, mientras siga ocupada, está el gerente en píxeles
+ *  (ManagerWalker): a su izquierda, a su derecha, debajo o encima, en el primer sitio libre. Con cada toque nuevo camina
+ *  a la mesa; su cartel sale al pasarle el ratón.
  *
  *  @param plan      el croquis
  *  @param byTable   lo de hoy de cada mesa, por su tableKey
@@ -30,6 +34,7 @@ import RotationCard from './RotationCard'
  *  @param onSelect  elegir una mesa (o soltarla, con null)
  *  @param topRoom   la franja de arriba que se deja libre para la leyenda del visor, en píxeles de pantalla (la mide
  *                   el visor: crece si la leyenda pasa a dos líneas)
+ *  @param lastTouch  el último toque de gerente del día (la mesa, quién y a qué hora), o null si no hubo
  *  @param autoLayout  repartir las zonas solas para que las mesas salgan más grandes (en el móvil): cada zona se
  *                     mueve entera, en filas y en el orden en que se leen, sin tocar cómo están sus mesas
  *                     (packedLayouts). Solo si así crecen bastante (PACK_GAIN), o si el croquis tal cual está
@@ -43,8 +48,14 @@ type FloorPlanStageProps = {
   selected: string | null
   onSelect: (key: string | null) => void
   topRoom: number
+  lastTouch: LastTouch | null
   autoLayout?: boolean
 }
+
+// MANAGER_GAP = «la separación entre el gerente y su mesa», en unidades del croquis; MANAGER_RATIO = «su ancho frente
+// a su alto» (el muñeco es de 16 × 20 píxeles)
+const MANAGER_GAP = 6
+const MANAGER_RATIO = 0.8
 
 // PLATE_PAD = «cuánto sobresale la placa de una zona de sus mesas», LABEL_ROOM = «el sitio de su nombre, encima»
 const PLATE_PAD = 14
@@ -187,7 +198,7 @@ function turnPlan(plan: FloorPlan): FloorPlan {
   }
 }
 
-export default function FloorPlanStage({ plan, byTable, cycles, zone, selected, onSelect, topRoom, autoLayout = false }: FloorPlanStageProps) {
+export default function FloorPlanStage({ plan, byTable, cycles, zone, selected, onSelect, topRoom, lastTouch, autoLayout = false }: FloorPlanStageProps) {
   const { t } = useTranslation()
   const box = useRef<HTMLDivElement>(null)
   const [size, setSize] = useState({ width: 0, height: 0 })
@@ -253,6 +264,31 @@ export default function FloorPlanStage({ plan, byTable, cycles, zone, selected, 
     cardStyle = { left: x, top: y }
   }
 
+  // El gerente: del alto de la mesa (el lado corto, si la mesa es alargada), al lado de la mesa del último toque. Se
+  // prueba en este orden: a la izquierda y a la derecha (con los pies a la altura de los de la mesa), debajo y encima
+  // (centrado). Se queda en el primer sitio libre; si no hay ninguno, en el primero que no se sale del plano aunque
+  // pise otra pieza; y si todos se salen, a la izquierda
+  const touchedPiece = lastTouch ? drawn.piezas.find(piece => isTable(piece) && tableKey(piece.label) === lastTouch.key) ?? null : null
+  let managerSpot: ManagerSpot | null = null
+  if (lastTouch && touchedPiece) {
+    const h = Math.min(touchedPiece.w, touchedPiece.h) - 6
+    const w = Math.round(h * MANAGER_RATIO)
+    const feet = touchedPiece.y + touchedPiece.h - 3 - h
+    const centered = touchedPiece.x + (touchedPiece.w - w) / 2
+    const spots = [
+      { x: touchedPiece.x + 3 - MANAGER_GAP - w, y: feet },
+      { x: touchedPiece.x + touchedPiece.w - 3 + MANAGER_GAP, y: feet },
+      { x: centered, y: touchedPiece.y + touchedPiece.h - 3 + MANAGER_GAP },
+      { x: centered, y: touchedPiece.y + 3 - MANAGER_GAP - h },
+    ]
+    const inside = ({ x, y }: { x: number; y: number }) => x >= bounds.x0 && x + w <= bounds.x1 && y >= bounds.y0 && y + h <= bounds.y1
+    const free = ({ x, y }: { x: number; y: number }) =>
+      !drawn.piezas.some(piece => piece.id !== touchedPiece.id && x < piece.x + piece.w && piece.x < x + w && y < piece.y + piece.h && piece.y < y + h)
+    const spot = spots.find(place => inside(place) && free(place)) ?? spots.find(inside) ?? spots[0]
+    // El cartel, del lado contrario a la mesa: debajo del gerente si él está debajo de ella, encima en los demás casos
+    managerSpot = { key: lastTouch.key, x: spot.x, y: spot.y, w, h, tagBelow: spot === spots[2] }
+  }
+
   return (
     <div ref={box} className='absolute inset-0'>
       {scale > 0 && (
@@ -300,9 +336,10 @@ export default function FloorPlanStage({ plan, byTable, cycles, zone, selected, 
                 style={{ ...style, fontSize: piece.label.length > 3 ? 15 : 20 }}
               >
                 {piece.label}
-                {phase === 'limpieza' && inZone && (
+                {/* La escoba en la que está por limpiar y el plato servido en la que ya tiene entregado todo lo que pidió */}
+                {(phase === 'limpieza' || phase === 'servida') && inZone && (
                   <span aria-hidden='true' className='absolute -bottom-3 -left-3 grid h-7 w-7 place-items-center rounded-full bg-[#2b2418] text-[#f0c95c] shadow-[0_0_0_3px_#e9b949]'>
-                    <PathIcon d={BROOM_ICON} size={17} strokeWidth={2.2} />
+                    <PathIcon d={phase === 'limpieza' ? BROOM_ICON : SERVED_ICON} size={17} strokeWidth={2.2} />
                   </span>
                 )}
                 {day.rotations > 0 && inZone && (
@@ -314,6 +351,24 @@ export default function FloorPlanStage({ plan, byTable, cycles, zone, selected, 
             )
           })}
         </div>
+      )}
+
+      {/* Uno por local: al cambiar de croquis aparece en su mesa, no viene andando desde otro local. Si la mesa del
+          último toque ya no está ocupada se esconde, pero sigue montado: con el toque siguiente sale andando desde ahí */}
+      {scale > 0 && lastTouch && managerSpot && touchedPiece && (
+        <ManagerWalker
+          key={plan.establishment}
+          spot={managerSpot}
+          touch={lastTouch}
+          left={left}
+          top={top}
+          scale={scale}
+          width={size.width}
+          height={size.height}
+          topRoom={topRoom}
+          dimmed={zone !== null && touchedPiece.zona !== zone}
+          hidden={!lastTouch.occupied}
+        />
       )}
 
       {shownPiece && cardStyle && (

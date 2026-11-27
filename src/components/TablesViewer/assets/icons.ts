@@ -3,6 +3,9 @@
 // BROOM_ICON = «una escoba»: la mesa está por limpiar (del Desocupa a la Limpieza)
 export const BROOM_ICON = 'M20 3l-7.5 7.5M12.5 10.5l1.5 1.5-5.5 7.5c-.6.6-1.6.6-2.2 0l-3.3-3.3c-.6-.6-.6-1.6 0-2.2L10.5 8.5l2 2zM6.5 13l4 4M4.5 15.5l3.5 3.5'
 
+// SERVED_ICON = «un plato servido, humeante»: la mesa tiene entregado todo lo que pidió (fase servida, por irse)
+export const SERVED_ICON = 'M2.5 17h19M5 17c.6 1.8 2 3 3.8 3h6.4c1.8 0 3.2-1.2 3.8-3M6 17a6 4.6 0 0 1 12 0M10 4c-.9 1-.9 2 0 3s.9 2 0 3M14 4c-.9 1-.9 2 0 3s.9 2 0 3'
+
 // LAYERS_ICON = «el icono del croquis»: tres capas
 export const LAYERS_ICON = 'M3 7l9-4 9 4-9 4-9-4zM3 12l9 4 9-4M3 17l9 4 9-4'
 

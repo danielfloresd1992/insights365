@@ -95,10 +95,15 @@ export default function PortalHeader({ userName, onSignOut, signingOut }: Portal
           <NavLink to='/en-vivo' className={navClasses}>
             {t('portal.livePanel')}
           </NavLink>
-          {/* el nombre entero no cabe junto a los controles por debajo de xl (1280 px): ahí, «Reportes» */}
+          {/* Los nombres enteros no caben junto a los controles: el del semanal sale entero desde 2xl (1536 px) y el de
+              por turno desde xl (1280 px); antes, «Semanal» y «Por turno» */}
+          <NavLink to='/reportes-turno' className={navClasses}>
+            <span className='xl:hidden'>{t('portal.shiftReportsShort')}</span>
+            <span className='hidden xl:inline'>{t('portal.shiftReports')}</span>
+          </NavLink>
           <NavLink to='/reportes' className={navClasses}>
-            <span className='xl:hidden'>{t('portal.weeklyReportShort')}</span>
-            <span className='hidden xl:inline'>{t('portal.weeklyReport')}</span>
+            <span className='2xl:hidden'>{t('portal.weeklyReportShort')}</span>
+            <span className='hidden 2xl:inline'>{t('portal.weeklyReport')}</span>
           </NavLink>
         </nav>
 
@@ -180,6 +185,13 @@ export default function PortalHeader({ userName, onSignOut, signingOut }: Portal
               >
                 {t('portal.livePanel')}
                 <span aria-hidden='true' className={LIVE_DOT} />
+              </NavLink>
+              <NavLink
+                to='/reportes-turno'
+                onClick={closeMenu}
+                className='flex h-[52px] items-center rounded-xl bg-portal-ctl px-4 text-base font-semibold text-portal-ink'
+              >
+                {t('portal.shiftReports')}
               </NavLink>
               <NavLink
                 to='/reportes'

@@ -3,8 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { ChevronLeftIcon, ChevronRightIcon, PathIcon } from '@/components/PortalIcons'
 import { useAppSelector } from '@/store/hooks'
 import FloorPlanStage from './assets/FloorPlanStage'
-import { BROOM_ICON, FIRST_TOUCH_ICON, LAYERS_ICON, LIVE_ICON, OTHER_TOUCHES_ICON, ROTATIONS_ICON } from './assets/icons'
-import { activityByTable, cyclesByTable, EMPTY_DAY, percent, sumDays, tableKey, tablesOf, unplacedRotations } from './hook/tableActivity'
+import { BROOM_ICON, FIRST_TOUCH_ICON, LAYERS_ICON, LIVE_ICON, OTHER_TOUCHES_ICON, ROTATIONS_ICON, SERVED_ICON } from './assets/icons'
+import { activityByTable, cyclesByTable, EMPTY_DAY, lastTouchOf, percent, sumDays, tableKey, tablesOf, unplacedRotations } from './hook/tableActivity'
 import { useFloorPlans } from './hook/useFloorPlans'
 import { useTableActivity } from './hook/useTableActivity'
 
@@ -107,6 +107,8 @@ export default function TablesViewer({ className = '', autoLayout = false }: { c
   const activity = useTableActivity(plan && current ? { _id: current._id, name: current.name } : null)
   const byTable = useMemo(() => activityByTable(activity.rotations), [activity.rotations])
   const cycles = useMemo(() => cyclesByTable(activity.rotations), [activity.rotations])
+  // lastTouch = «el último toque de gerente de hoy»: ahí se pone el gerente en píxeles del croquis
+  const lastTouch = useMemo(() => lastTouchOf(activity.rotations, activity.day), [activity.rotations, activity.day])
 
   const choose = (id: string) => {
     setChosenId(id)
@@ -249,16 +251,16 @@ export default function TablesViewer({ className = '', autoLayout = false }: { c
           {plan ? (
             <>
               {/* ← y → pasan de croquis mientras el foco está en el plano (en una mesa) */}
-              <div role='group' aria-label={t('tables.planGroup', { name: current.name })} onKeyDown={stepByKey} className='relative min-h-0 flex-1 overflow-hidden rounded-xl bg-portal-surface ring-1 ring-inset ring-portal-line dark:bg-[#221e17] dark:ring-0'>
+              <div role='group' aria-label={t('tables.planGroup', { name: current.name })} onKeyDown={stepByKey} className='relative min-h-0 flex-1 overflow-hidden rounded-xl bg-[#fbf6ea] ring-1 ring-inset ring-portal-line dark:bg-[#221e17] dark:ring-0'>
                 <div ref={watchLegend} aria-hidden='true' className='absolute left-1/2 top-2.5 flex w-max max-w-[calc(100%-20px)] -translate-x-1/2 flex-wrap items-center justify-center gap-x-3 gap-y-1 rounded-lg bg-portal-surface/90 px-2.5 py-1.5 text-xs text-portal-muted'>
                   {/* Las fases del ciclo, en su orden; las que titilan en el plano titilan también aquí */}
                   <span className='inline-flex items-center gap-1.5'><span className='table-blink table-blink-green h-2.5 w-2.5 rounded-[3px] bg-[#29c50c] ring-1 ring-portal-ring [--blink-inset:2px]' />{t('tables.phase.espera')}</span>
                   <span className='inline-flex items-center gap-1.5'><span className='h-2.5 w-2.5 rounded-[3px] bg-[#29c50c]' />{t('tables.phase.ocupada')}</span>
-                  <span className='inline-flex items-center gap-1.5'><span className='h-2.5 w-2.5 rounded-[3px] bg-[#e9b949]' />{t('tables.phase.servida')}</span>
+                  <span className='inline-flex items-center gap-1.5'><span className='grid h-4 w-4 place-items-center rounded-[4px] bg-[#e9b949] text-[#2b2418] ring-1 ring-portal-ring'><PathIcon d={SERVED_ICON} size={11} strokeWidth={2.4} /></span>{t('tables.phase.servida')}</span>
                   <span className='inline-flex items-center gap-1.5'><span className='table-blink table-blink-yellow grid h-4 w-4 place-items-center rounded-[4px] bg-[#e9b949] text-[#2b2418] ring-1 ring-portal-ring [--blink-inset:2px]'><PathIcon d={BROOM_ICON} size={11} strokeWidth={2.4} /></span>{t('tables.phase.limpieza')}</span>
                   <span className='inline-flex items-center gap-1.5'><span className='grid h-4 min-w-[18px] place-items-center rounded-full bg-portal-ink px-1 text-[11px] font-bold text-portal-page'>2</span>{t('tables.legendCount')}</span>
                 </div>
-                <FloorPlanStage plan={plan} byTable={byTable} cycles={cycles} zone={zone} selected={table} onSelect={setTable} topRoom={legendRoom} autoLayout={autoLayout} />
+                <FloorPlanStage plan={plan} byTable={byTable} cycles={cycles} zone={zone} selected={table} onSelect={setTable} topRoom={legendRoom} lastTouch={lastTouch} autoLayout={autoLayout} />
               </div>
 
               <section aria-label={t('tables.statsLabel')} className='flex flex-col gap-1.5'>

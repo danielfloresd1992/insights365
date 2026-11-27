@@ -164,6 +164,36 @@ export function shortHour(hour: string | null | undefined): string {
   return `${String(Math.floor(value / 3600)).padStart(2, '0')}:${String(Math.floor((value % 3600) / 60)).padStart(2, '0')}`
 }
 
+// LastTouch = «el último toque de gerente del día»: la mesa (su tableKey y su etiqueta), quién, a qué hora y si la
+// rotación de ese toque sigue OCUPADA (abierta y sin el Desocupa): solo entonces se enseña el gerente en el croquis
+export type LastTouch = { key: string; table: string; name: string; hour: string; occupied: boolean }
+
+// DAY_START = «la hora en que empieza el día operativo», 08:00: lo de antes (la madrugada) va al final del día
+const DAY_START = 8 * 3600
+
+/** El último toque de gerente del día operativo `day`, de todas las mesas (sin los pedidos para llevar), o null si no
+ *  hubo. Se ordena por su hora dentro del día operativo (la madrugada después de la noche) y, a la misma hora, por el
+ *  momento real del clic. Las rotaciones abiertas de otro día (las que se quedaron en Mesas sin guardar) no cuentan. */
+export function lastTouchOf(rotations: Rotation[], day: string): LastTouch | null {
+  let best: { touch: LastTouch; at: number; clicked: number } | null = null
+  for (const rotation of rotations) {
+    if (rotation.takeOut) continue
+    if (String(rotation.operationalDate ?? '').slice(0, 10) !== day) continue
+    const key = tableKey(rotation.tableNumber)
+    if (!key) continue
+    for (const touch of rotation.touch ?? []) {
+      const time = seconds(touch.hourTouch)
+      if (time === null) continue
+      const at = time < DAY_START ? time + 24 * 3600 : time
+      const clicked = touch.createdAt ? Date.parse(touch.createdAt) || 0 : 0
+      if (!best || at > best.at || (at === best.at && clicked > best.clicked)) {
+        best = { touch: { key, table: rotation.tableNumber.trim(), name: touch.name, hour: shortHour(touch.hourTouch), occupied: stateOf(rotation) === 'ocupada' }, at, clicked }
+      }
+    }
+  }
+  return best?.touch ?? null
+}
+
 /** El día operativo de un instante, AAAA-MM-DD: de 08:00 a 07:59 en America/Caracas, como operationalDateOf en la
  *  API (dvrFailure.lib.ts). Una mesa de las 02:00 es del día anterior. */
 export function operationalDay(now: Date | number = Date.now()): string {

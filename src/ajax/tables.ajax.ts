@@ -30,7 +30,8 @@ export type FloorPlan = {
 // RotationTouch = «un toque de gerente», RotationProcess = «un pedido de la mesa» y Rotation = «una mesa desde que
 // se ocupa hasta que se limpia», con lo que el visor usa de ella. Las horas van como texto 'HH:MM:SS', como las anota
 // el operador; '' es «todavía no pasó»
-export type RotationTouch = { _id?: string; name: string; hourTouch: string }
+// (createdAt = el momento real del clic; los toques de antes de existir el campo lo traen null)
+export type RotationTouch = { _id?: string; name: string; hourTouch: string; createdAt?: string | null }
 export type RotationProcess = { _id?: string; dishType: string; orderTaking: string; markedReadyOnTablet: string; readyInTheKitchen: string; dishDelivery: string }
 export type Rotation = {
   _id: string

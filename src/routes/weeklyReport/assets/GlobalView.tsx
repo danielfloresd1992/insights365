@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { FullEstablishment } from '@/ajax/establishments.ajax'
+import { tweenLabel, useRevealValues } from '../hook/useRevealValues'
 import { useWeekLoads } from '../hook/useWeekLoads'
 import { METRICS, combine, formatMetric, summarize, type Metric, type MetricId, type Summary } from '../weekData'
 import { Card, NUM, Notice, Progress, TABLE, TD, TH } from './parts'
@@ -29,22 +30,29 @@ const byMetric = (metric: Metric, ascending?: boolean) => (first: Row, second: R
   return ascending === undefined ? bestFirst : ascending ? a - b : b - a
 }
 
-// Ranking = «las barras de un ranking»: un renglón por local (o franquicia), con su puesto, su barra y su cifra
+// Ranking = «las barras de un ranking»: un renglón por local (o franquicia), con su puesto, su barra y su cifra. Las
+// barras y las cifras están en 0 hasta que el ranking entra en pantalla, y luego crecen; van por local, así que al
+// reordenarse (llega otro local, se cambia de indicador) cada barra sigue siendo la suya
 function Ranking({ rows, metric, lang, label }: { rows: Row[]; metric: Metric; lang: string; label: string }) {
   const values = rows.map(row => (row.summary ? metric.value(row.summary) : null))
   const peak = Math.max(1, ...values.map(value => value ?? 0))
+  const { ref, valueOf } = useRevealValues<HTMLOListElement>(rows.map((row, index): [string, number] => [row.id, values[index] ?? 0]))
   return (
-    <ol aria-label={label} className='m-0 flex list-none flex-col gap-1.5 p-0'>
+    <ol ref={ref} aria-label={label} className='m-0 flex list-none flex-col gap-1.5 p-0'>
       {rows.map((row, index) => {
         const value = values[index]
+        const now = valueOf(row.id)
         return (
           <li key={row.id} className='grid grid-cols-[1.5rem_minmax(0,11rem)_minmax(0,1fr)_4.5rem] items-center gap-2.5 text-[13.5px]'>
             <span className='text-right font-plex-mono text-xs text-portal-muted'>{value === null ? '' : index + 1}</span>
             <span className='truncate text-portal-ink' title={row.name}>{row.name}</span>
             <span aria-hidden='true' className='block h-4 rounded-[4px] bg-portal-soft'>
-              {value !== null && <span className='block h-full min-w-px rounded-[4px] bg-chart-day' style={{ width: `${(value / peak) * 100}%` }} />}
+              {value !== null && <span className='block h-full min-w-px rounded-[4px] bg-chart-day' style={{ width: `${(now / peak) * 100}%` }} />}
             </span>
-            <span className='text-right font-plex-mono tabular-nums text-portal-ink'>{formatMetric(value, metric.kind, lang)}</span>
+            <span className='text-right font-plex-mono tabular-nums text-portal-ink'>
+              <span aria-hidden='true'>{value === null ? formatMetric(null, metric.kind, lang) : formatMetric(tweenLabel(now, value), metric.kind, lang)}</span>
+              <span className='sr-only'>{formatMetric(value, metric.kind, lang)}</span>
+            </span>
           </li>
         )
       })}

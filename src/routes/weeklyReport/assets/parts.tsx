@@ -1,19 +1,61 @@
 import type { ReactNode } from 'react'
+import { useRevealValues } from '../hook/useRevealValues'
 
 /*  LAS PIEZAS QUE COMPARTEN LAS TRES VISTAS DEL REPORTE. Solo pintan. */
 
-// Card = «un bloque con título»; con `id`, un enlace (#id) lleva a él sin quedar bajo la cabecera fija
-export function Card({ id, title, note, children, className = '' }: { id?: string; title: string; note?: string; children: ReactNode; className?: string }) {
+// Card = «un bloque con título»; con `id`, un enlace (#id) lleva a él sin quedar bajo la cabecera fija; con `icon`
+// (trazos de 24×24), el título lleva delante su icono en relieve
+export function Card({ id, title, note, icon, children, className = '' }: { id?: string; title: string; note?: string; icon?: string[]; children: ReactNode; className?: string }) {
+  const heading = (
+    <>
+      <h2 className='m-0 text-[15px] font-semibold tracking-[-0.01em] text-portal-ink'>{title}</h2>
+      {note && <p className='m-0 mt-0.5 text-[12.5px] text-portal-muted'>{note}</p>}
+    </>
+  )
   return (
     <section id={id} className={`flex min-w-0 scroll-mt-24 flex-col gap-3 rounded-2xl bg-portal-surface p-4 ring-1 ring-inset ring-portal-line sm:p-5 ${className}`}>
-      <header>
-        <h2 className='m-0 text-[15px] font-semibold tracking-[-0.01em] text-portal-ink'>{title}</h2>
-        {note && <p className='m-0 mt-0.5 text-[12.5px] text-portal-muted'>{note}</p>}
-      </header>
+      {icon ? (
+        <header className='flex items-center gap-3'>
+          <IconTile paths={icon} />
+          <div className='min-w-0'>{heading}</div>
+        </header>
+      ) : (
+        <header>{heading}</header>
+      )}
       {children}
     </section>
   )
 }
+
+// IconTile = «un icono en una ficha ámbar en relieve», delante de un título (propuesta B del lienzo del semanal en 3D)
+export function IconTile({ paths, size = 'md' }: { paths: string[]; size?: 'sm' | 'md' }) {
+  const box = size === 'sm' ? 'h-8 w-8 rounded-[10px]' : 'h-9 w-9 rounded-[11px]'
+  const icon = size === 'sm' ? 16 : 19
+  return (
+    <span
+      aria-hidden='true'
+      className={`grid flex-none place-items-center ${box} bg-[linear-gradient(160deg,#fff3d6_0%,#f0dcaa_100%)] text-[#8a5a0f] shadow-[inset_0_1px_0_rgba(255,255,255,0.8),0_2px_0_#e0cb98,0_5px_10px_rgba(120,90,20,0.16)] dark:bg-[linear-gradient(160deg,#5c4722_0%,#2f2614_100%)] dark:text-[#f1c66e] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_3px_0_#17120a,0_6px_12px_rgba(0,0,0,0.35)]`}
+    >
+      <svg width={icon} height={icon} viewBox='0 0 24 24' fill='none' stroke='currentColor' strokeWidth='1.9' strokeLinecap='round' strokeLinejoin='round'>
+        {paths.map(path => <path key={path} d={path} />)}
+      </svg>
+    </span>
+  )
+}
+
+// GrowBar = «una barrita de proporción» (0 a 1) con su carril: en 0 hasta que entra en pantalla, luego crece hasta su
+// sitio (useRevealValues). Decorativa: la cifra va escrita al lado
+export function GrowBar({ fraction, track, fill }: { fraction: number; track: string; fill: string }) {
+  const { ref, valueOf } = useRevealValues<HTMLSpanElement>([['barra', Math.min(1, Math.max(0, fraction))]])
+  return (
+    <span ref={ref} aria-hidden='true' className={track}>
+      <span className={fill} style={{ width: `${valueOf('barra') * 100}%` }} />
+    </span>
+  )
+}
+
+// STAGE = «la luz de arriba de los bloques del semanal en 3D»: un degradado suave sobre el fondo y un filo claro arriba
+export const STAGE = 'bg-[linear-gradient(180deg,#f9f3e6_0%,#fffdf7_55%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.9)] dark:bg-[linear-gradient(180deg,#2a251d_0%,#25211a_60%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
 
 // Notice = «un aviso»: lo que falta (warn) o lo que falló (error)
 export function Notice({ tone = 'warn', children }: { tone?: 'warn' | 'error'; children: ReactNode }) {

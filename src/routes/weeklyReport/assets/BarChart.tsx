@@ -1,18 +1,24 @@
+import { tweenLabel, useRevealValues } from '../hook/useRevealValues'
+import { niceMax } from './chartScale'
+
 /*  UNA GRÁFICA DE BARRAS, hecha con HTML y CSS (sin librería). Solo pinta.
  *
  *  Una columna por categoría (un día, una semana); dentro, las series apiladas (stacked) o lado a lado. Encima de cada
  *  columna va su total o su valor; al pasar el ratón o enfocar una columna sale el detalle de cada serie. Con más de
  *  una serie lleva leyenda. El eje parte de cero y tiene un solo sentido: una medida por gráfica.
  *  Los colores de serie son clases de fondo (bg-chart-day, bg-chart-night…): cambian con el tema.
+ *  Las barras y sus cifras están en 0 hasta que la gráfica entra en pantalla, y entonces crecen; si los datos cambian,
+ *  pasan a los nuevos (useRevealValues). El detalle y los lectores de pantalla dicen siempre la cifra exacta.
  *
  *  @param categories  el rótulo de cada columna
- *  @param series      cada serie: nombre, clase de color y un valor por columna (null = sin dato)
+ *  @param series      cada serie: nombre, clase de color y un valor por columna (null = sin dato). `tint` es el mismo
+ *                     color como valor de CSS (var(--color-chart-day)…), para la gráfica en 3D (Bars3D)
  *  @param stacked     apiladas (las series suman) o lado a lado
  *  @param format      cómo se escribe un valor
  *  @param label       qué enseña la gráfica, para lectores de pantalla
  *  @param highlight   el índice de una columna que se destaca (las demás se atenúan), si lo hay
  */
-export type BarSeries = { name: string; color: string; values: (number | null)[] }
+export type BarSeries = { name: string; color: string; tint?: string; values: (number | null)[] }
 
 type BarChartProps = {
   categories: string[]
@@ -24,19 +30,17 @@ type BarChartProps = {
   height?: number
 }
 
-// niceMax = «un tope redondo para el eje»: 1, 2, 2,5, 5 o 10 por la potencia de diez que toque
-function niceMax(value: number): number {
-  if (value <= 0) return 1
-  const power = 10 ** Math.floor(Math.log10(value))
-  const step = [1, 2, 2.5, 5, 10].find(candidate => candidate * power >= value) ?? 10
-  return step * power
-}
-
 export default function BarChart({ categories, series, stacked = false, format, label, highlight, height = 200 }: BarChartProps) {
   const columnTotal = (index: number) => series.reduce((sum, item) => sum + (item.values[index] ?? 0), 0)
   const peak = Math.max(...categories.map((_, index) => (stacked ? columnTotal(index) : Math.max(...series.map(item => item.values[index] ?? 0)))))
   const top = niceMax(peak)
   const share = (value: number) => `${(value / top) * 100}%`
+  // lo que se ve de cada valor: en 0 hasta que la gráfica entra en pantalla, luego creciendo (la escala, con los datos)
+  const keyOf = (item: BarSeries, category: string) => `${item.name}|${category}`
+  const { ref, valueOf } = useRevealValues<HTMLDivElement>(
+    series.flatMap(item => categories.map((category, index): [string, number] => [keyOf(item, category), item.values[index] ?? 0])),
+  )
+  const nowTotal = (category: string) => series.reduce((sum, item) => sum + valueOf(keyOf(item, category)), 0)
 
   return (
     <figure className='m-0 flex flex-col gap-2' aria-label={label}>
@@ -52,7 +56,7 @@ export default function BarChart({ categories, series, stacked = false, format, 
       )}
 
       {/* el margen de arriba deja sitio a la cifra de la barra más alta, que va por encima del tope */}
-      <div className='relative mt-5' style={{ height }}>
+      <div ref={ref} className='relative mt-5' style={{ height }}>
         {/* la rejilla: el tope, la mitad y el cero; la mitad se calla si al escribirla repite el tope (escalas de 0 a 1) */}
         {[1, 0.5, 0].filter(fraction => fraction !== 0.5 || format(top * 0.5) !== format(top)).map(fraction => (
           <div key={fraction} aria-hidden='true' className='absolute inset-x-0 border-t border-portal-line' style={{ bottom: `${fraction * 100}%` }}>
@@ -64,24 +68,30 @@ export default function BarChart({ categories, series, stacked = false, format, 
           {categories.map((category, index) => {
             const dimmed = highlight !== undefined && highlight !== index
             const total = columnTotal(index)
+            const totalNow = nowTotal(category)
             const empty = series.every(item => item.values[index] === null)
             return (
               <li key={category} tabIndex={0} className='group relative flex h-full min-w-0 flex-1 flex-col justify-end outline-none'>
                 <div
                   className={`relative flex min-h-0 justify-center ${stacked ? 'flex-col-reverse items-stretch gap-0.5' : 'items-end gap-0.5'} ${dimmed ? 'opacity-45' : ''}`}
-                  style={{ height: stacked ? share(total) : '100%' }}
+                  style={{ height: stacked ? share(totalNow) : '100%' }}
                 >
-                  {/* la cifra va encima de la barra, fuera de su alto, para no deformar la escala */}
+                  {/* la cifra va encima de la barra, fuera de su alto, para no deformar la escala; cuenta mientras
+                      crece, y el lector de pantalla oye la exacta */}
                   {(stacked || series.length === 1) && (
-                    <span
-                      className='absolute inset-x-0 text-center font-plex-mono text-[11px] font-medium text-portal-ink'
-                      style={{ bottom: stacked ? '100%' : share(total), marginBottom: 3 }}
-                    >
-                      {empty ? '—' : format(total)}
-                    </span>
+                    <>
+                      <span
+                        aria-hidden='true'
+                        className='absolute inset-x-0 text-center font-plex-mono text-[11px] font-medium text-portal-ink'
+                        style={{ bottom: stacked ? '100%' : share(totalNow), marginBottom: 3 }}
+                      >
+                        {empty ? '—' : format(tweenLabel(totalNow, total))}
+                      </span>
+                      <span className='sr-only'>{`${category}: ${empty ? '—' : format(total)}`}</span>
+                    </>
                   )}
                   {series.map(item => {
-                    const value = item.values[index] ?? 0
+                    const value = valueOf(keyOf(item, category))
                     if (stacked && value <= 0) return null
                     return (
                       <span

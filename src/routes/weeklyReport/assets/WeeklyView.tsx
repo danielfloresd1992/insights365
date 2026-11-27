@@ -5,9 +5,11 @@ import type { ByShift, ShiftKey, WeeklyReport } from '@/libs/weekly/weeklyMetric
 import { useWeekLoads } from '../hook/useWeekLoads'
 import { METRICS, addWeeks, combine, formatMetric, isoWeekOf, summarize, type Metric, type MetricId, type Summary } from '../weekData'
 import { storyOf, type FindingIcon, type FindingTone, type Phrase } from '../weekStory'
-import BarChart, { type BarSeries } from './BarChart'
-import { Arrow, Card, NUM, Notice, Progress, TABLE, TD, TH } from './parts'
+import type { BarSeries } from './BarChart'
+import BarChart3D, { MiniBars3D } from './Bars3D'
+import { Arrow, Card, GrowBar, IconTile, NUM, Notice, Progress, STAGE, TABLE, TD, TH } from './parts'
 import { TONE } from './tone'
+import { METRIC_ICON, SECTION_ICON } from './weeklyIcons'
 
 /*  EL SEMANAL DE UN LOCAL: una semana, con las mismas cifras que el PDF (libs/weekly/weeklyMetrics), contada primero
  *  (propuesta A del lienzo del semanal, elegida por el usuario).
@@ -20,6 +22,8 @@ import { TONE } from './tone'
  *    demoras de preparación por día, la preparación por plato, las devoluciones y los toques.
  *  Lo que el local no evalúa (barra, primera atención…) no sale, igual que en el PDF (report.aplica). Las semanas con
  *  que se compara se piden aparte: la semana se enseña en cuanto llega y los cambios aparecen después.
+ *  Las gráficas van en 3D y cada título lleva su icono (propuesta B del lienzo «Semanal en 3D con iconos»: Bars3D,
+ *  IconTile y weeklyIcons); las cifras son las mismas.
  *
  *  @param establishment  el local
  *  @param monday         el lunes de la semana
@@ -32,6 +36,8 @@ const AVERAGE_WEEKS = 3
 
 // SHIFT_COLOR = «el color de cada turno en las gráficas»; el turno único usa el del diurno
 const SHIFT_COLOR: Record<ShiftKey, string> = { day: 'bg-chart-day', night: 'bg-chart-night', all: 'bg-chart-day' }
+// SHIFT_TINT = «el mismo color, como valor de CSS», para rellenar las cajas de la gráfica en 3D
+const SHIFT_TINT: Record<ShiftKey, string> = { day: 'var(--color-chart-day)', night: 'var(--color-chart-night)', all: 'var(--color-chart-day)' }
 
 // FINDING_LOOK = «el aspecto de cada hallazgo»: grave en naranja, aviso en ocre, bueno en azul
 const FINDING_LOOK: Record<FindingTone, { card: string; area: string }> = {
@@ -129,6 +135,7 @@ function WeeklyBoard({ report, name, monday, base, onBase, comparing, previous, 
     shifts.map(shift => ({
       name: shiftName(shift),
       color: SHIFT_COLOR[shift],
+      tint: SHIFT_TINT[shift],
       values: report.porDia.map((day, index) => (day[shift].presente ? valueOf(index, shift) : null)),
     }))
   // perDay = «la suma de los turnos de cada día»
@@ -181,7 +188,8 @@ function WeeklyBoard({ report, name, monday, base, onBase, comparing, previous, 
       value: formatMetric(now, metric.kind, lang),
       change,
       note: plan.note,
-      bars: plan.days.map((value, index) => ({ height: top > 0 ? `${Math.max(4, (value / top) * 100)}%` : '4%', peak: top > 0 && index === peak, present: dayPresent[index] })),
+      icon: METRIC_ICON[plan.id],
+      bars: plan.days.map((value, index) => ({ ratio: top > 0 ? Math.max(0.04, value / top) : 0.04, peak: top > 0 && index === peak, present: dayPresent[index] })),
       peak: top <= 0 ? t('reports.story.noPeak') : plan.unit === 'delays' ? t('reports.story.peakDelays', { day: days[peak], count: top }) : t('reports.story.peak', { day: days[peak], value: count(top) }),
     }
   })
@@ -277,8 +285,11 @@ function WeeklyBoard({ report, name, monday, base, onBase, comparing, previous, 
         </div>
         <div className='grid gap-3 [grid-template-columns:repeat(auto-fit,minmax(150px,1fr))]'>
           {kpis.map(kpi => (
-            <article key={kpi.id} className='flex min-w-0 flex-col gap-2 rounded-2xl bg-portal-surface p-4 ring-1 ring-inset ring-portal-line'>
-              <h3 className='m-0 min-h-[2.5em] text-[12.5px] font-medium leading-snug text-portal-muted'>{kpi.label}</h3>
+            <article key={kpi.id} className={`flex min-w-0 flex-col gap-2 rounded-2xl bg-portal-surface p-4 ring-1 ring-inset ring-portal-line ${STAGE}`}>
+              <div className='flex items-start gap-2.5'>
+                <IconTile paths={kpi.icon} size='sm' />
+                <h3 className='m-0 min-h-[2.5em] min-w-0 pt-0.5 text-[12.5px] font-medium leading-snug text-portal-muted'>{kpi.label}</h3>
+              </div>
               <p className='m-0 font-plex-mono text-[1.75rem] font-medium leading-none tracking-[-0.02em] text-portal-ink'>{kpi.value}</p>
               {kpi.change ? (
                 <p className={`m-0 inline-flex items-center gap-1.5 self-start rounded-full px-2.5 py-1 text-[12.5px] font-semibold ${toneOf(kpi.change.good).pill}`}>
@@ -290,15 +301,7 @@ function WeeklyBoard({ report, name, monday, base, onBase, comparing, previous, 
                 <p className='m-0 self-start rounded-full bg-portal-ctl px-2.5 py-1 text-[12px] text-portal-muted'>{comparing ? t('reports.story.comparingShort') : t('reports.story.noReference')}</p>
               )}
               {kpi.note && <p className='m-0 text-xs text-portal-muted'>{kpi.note}</p>}
-              <div aria-hidden='true' className='mt-1 flex h-9 items-end gap-[3px]'>
-                {kpi.bars.map((bar, index) => (
-                  <span
-                    key={report.porDia[index].date}
-                    className={`flex-1 rounded-t-[3px] rounded-b-[1px] ${!bar.present ? 'border border-dashed border-portal-line' : bar.peak ? 'bg-[#c9962f] dark:bg-[#d9a441]' : 'bg-[#d6ccb7] dark:bg-[#5b5341]'}`}
-                    style={{ height: bar.present ? bar.height : '100%' }}
-                  />
-                ))}
-              </div>
+              <MiniBars3D bars={kpi.bars} />
               <p className='m-0 text-[11.5px] text-portal-muted'>{kpi.peak}</p>
             </article>
           ))}
@@ -333,7 +336,7 @@ function WeeklyBoard({ report, name, monday, base, onBase, comparing, previous, 
       </section>
 
       <div className='grid gap-4 lg:grid-cols-2'>
-        <Card id='semanal-cuadro' title={t('reports.generalTable')} note={shifts.length > 1 ? t('reports.story.heaviestNote') : undefined}>
+        <Card id='semanal-cuadro' title={t('reports.generalTable')} icon={SECTION_ICON.generalTable} className={STAGE} note={shifts.length > 1 ? t('reports.story.heaviestNote') : undefined}>
           <div className='overflow-x-auto'>
             <table className={TABLE}>
               <thead>
@@ -364,8 +367,8 @@ function WeeklyBoard({ report, name, monday, base, onBase, comparing, previous, 
           </div>
         </Card>
 
-        <Card id='semanal-dias' title={t('reports.rotationsByDay')}>
-          <BarChart stacked categories={days} series={seriesOf((index, shift) => report.porDia[index][shift].rotaciones)} format={count} label={t('reports.rotationsByDay')} />
+        <Card id='semanal-dias' title={t('reports.rotationsByDay')} icon={SECTION_ICON.rotationsByDay} className={STAGE}>
+          <BarChart3D categories={days} series={seriesOf((index, shift) => report.porDia[index][shift].rotaciones)} format={count} label={t('reports.rotationsByDay')} />
           {rotationDays[strongest] > 0 && (
             <p className='m-0 text-[12.5px] text-portal-muted'>
               {t('reports.story.strongestDay', { day: weekdayOf(strongest, 'long'), count: count(rotationDays[strongest]) })}
@@ -375,7 +378,7 @@ function WeeklyBoard({ report, name, monday, base, onBase, comparing, previous, 
         </Card>
 
         {aplica.metrica && (
-          <Card id='semanal-plato' title={t('reports.byDish')} note={t('reports.story.dishBarNote', { pct: pct(dishScale) })}>
+          <Card id='semanal-plato' title={t('reports.byDish')} icon={SECTION_ICON.byDish} className={STAGE} note={t('reports.story.dishBarNote', { pct: pct(dishScale) })}>
             <div className='overflow-x-auto'>
               <table className={TABLE}>
                 <thead>
@@ -395,9 +398,11 @@ function WeeklyBoard({ report, name, monday, base, onBase, comparing, previous, 
                       <td className={`${TD} ${NUM}`}>{count(row.total.demoras)}</td>
                       <td className={`${TD} ${NUM}`}>
                         <span className='inline-flex items-center justify-end gap-2'>
-                          <span aria-hidden='true' className='hidden h-2 w-16 overflow-hidden rounded-full bg-portal-line sm:block'>
-                            <span className='block h-full rounded-full bg-[#c4532a] dark:bg-[#e0703f]' style={{ width: `${Math.min(100, ((row.total.porcentaje ?? 0) / dishScale) * 100)}%` }} />
-                          </span>
+                          <GrowBar
+                            fraction={(row.total.porcentaje ?? 0) / dishScale}
+                            track='hidden h-2 w-16 overflow-hidden rounded-full bg-portal-line sm:block'
+                            fill='block h-full rounded-full bg-[#c4532a] dark:bg-[#e0703f]'
+                          />
                           {pct(row.total.porcentaje)}
                         </span>
                       </td>
@@ -411,13 +416,13 @@ function WeeklyBoard({ report, name, monday, base, onBase, comparing, previous, 
         )}
 
         {aplica.metrica && (
-          <Card title={t('reports.prepDelaysByDay')} note={t('reports.prepDelaysNote')}>
-            <BarChart stacked categories={days} series={seriesOf((index, shift) => report.demorasPorDia[index][shift])} format={count} label={t('reports.prepDelaysByDay')} />
+          <Card title={t('reports.prepDelaysByDay')} icon={SECTION_ICON.prepDelaysByDay} className={STAGE} note={t('reports.prepDelaysNote')}>
+            <BarChart3D categories={days} series={seriesOf((index, shift) => report.demorasPorDia[index][shift])} format={count} label={t('reports.prepDelaysByDay')} />
           </Card>
         )}
 
         {aplica.devoluciones && (
-          <Card id='semanal-devoluciones' title={t('reports.returns')} note={devoluciones.porcentaje !== null ? sentence(t('reports.ofProcesses', { pct: pct(devoluciones.porcentaje) })) : undefined}>
+          <Card id='semanal-devoluciones' title={t('reports.returns')} icon={SECTION_ICON.returns} className={STAGE} note={devoluciones.porcentaje !== null ? sentence(t('reports.ofProcesses', { pct: pct(devoluciones.porcentaje) })) : undefined}>
             <dl className='m-0 grid gap-2 [grid-template-columns:repeat(auto-fit,minmax(120px,1fr))]'>
               {devoluciones.porTipo.filter(row => row.visible).map(row => (
                 <div key={row.tipo} className='rounded-xl bg-portal-ctl px-3 py-2.5'>
@@ -426,12 +431,12 @@ function WeeklyBoard({ report, name, monday, base, onBase, comparing, previous, 
                 </div>
               ))}
             </dl>
-            <BarChart stacked categories={days} series={seriesOf((index, shift) => devoluciones.porDia[index][shift])} format={count} label={t('reports.returns')} height={150} />
+            <BarChart3D categories={days} series={seriesOf((index, shift) => devoluciones.porDia[index][shift])} format={count} label={t('reports.returns')} height={150} />
           </Card>
         )}
 
         {aplica.toques && report.toques.length > 0 && (
-          <Card title={t('reports.touches')} note={aplica.toquesSeparados ? t('reports.touchesNote') : undefined}>
+          <Card title={t('reports.touches')} icon={SECTION_ICON.touches} className={STAGE} note={aplica.toquesSeparados ? t('reports.touchesNote') : undefined}>
             <div className='overflow-x-auto'>
               <table className={TABLE}>
                 <thead>
